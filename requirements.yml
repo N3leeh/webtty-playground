@@ -1,0 +1,4 @@
+---
+# file: requirements.yml
+- name: geerlingguy.docker
+- name: geerlingguy.nginx
