@@ -3,7 +3,7 @@
 
 - name: Set up local workstation
   hosts: local
-  local_vars:
+  vars_files:
     - vars/nginx.yml
   roles:
     - role: certificates
