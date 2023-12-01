@@ -1,27 +1,9 @@
 ---
 
-- name: Check if host network exists
-  docker_network_info:
-    name: host
-  register: docker_host_network
-
-- name: Debugging
-  debug:
-    var: docker_bridge.network
-  when: docker_host_network.exists
-
-- name: Create a host network if not present
-  docker_network:
-    name: host
-    driver: host 
-  when: not docker_host_network.exists
-
 - name: Run Webtty container
   docker_container:
     name: webtty
     state: started
-    networks:
-      - name: host
     ports:
       - 3000:3000
     image: wettyoss/wetty
