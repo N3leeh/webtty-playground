@@ -13,7 +13,7 @@
 - name: Run Webtty container
   docker_container:
     name: webtty
-    state: present
+    state: started
     image: wettyoss/wetty
     command: 
       - wetty
