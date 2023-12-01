@@ -22,6 +22,8 @@
     state: started
     networks:
       - name: host
+    ports:
+      - 3000:3000
     image: wettyoss/wetty
     command: 
       - wetty
