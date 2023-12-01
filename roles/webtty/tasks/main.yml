@@ -1,5 +1,15 @@
 ---
 
+- name: Get infos on network
+  docker_network_info:
+    name: bridge
+  register: docker_bridge
+
+- name: Debugging
+  debug:
+    var: docker_bridge.network
+  when: docker_bridge.exists
+
 - name: Run Webtty container
   docker_container:
     name: webtty
@@ -11,3 +21,4 @@
       - wetty
       - --base=/
       - --ssh-host={{ docker_bridge.network.IPAM.Config[0].Gateway }}
+  when: docker_bridge.exists
