@@ -1,0 +1,9 @@
+---
+- name: Run Webtty container
+  docker_container:
+    name: webtty
+    state: present
+    image: wettyoss/wetty
+    command: 
+      - --base=/
+      - --ssh-host={{ ansible_fqdn }}
