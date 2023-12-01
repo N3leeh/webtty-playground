@@ -15,6 +15,5 @@ if ! command -v ansible &> /dev/null;then
     echo "Don't know this package system (neither RPM nor DEB)."
     exit 1
   fi
-else
-  ansible-playbook -i hosts webtty.yml
 fi
+ansible-playbook -i hosts webtty.yml
