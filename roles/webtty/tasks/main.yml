@@ -5,11 +5,6 @@
     name: bridge
   register: docker_bridge
 
-- name: Debugging
-  debug:
-    var: docker_bridge.network
-  when: docker_bridge.exists
-
 - name: Run Webtty container
   docker_container:
     name: webtty
