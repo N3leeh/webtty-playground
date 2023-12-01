@@ -14,4 +14,7 @@
       - wetty
       - --base=/
       - --ssh-host={{ docker_bridge.network.IPAM.Config[0].Gateway }}
+    networks:
+      - name: bridge
+        ipv4_address: 172.17.0.2
   when: docker_bridge.exists
