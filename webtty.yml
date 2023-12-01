@@ -1,0 +1,11 @@
+---
+# file: webtty.yml
+
+- name: Set up local workstation
+  hosts: local
+  local_vars:
+    - vars/nginx.yml
+  roles:
+    - role: certificates
+    - role: geerlingguy.docker
+    - role: geerlingguy.nginx
