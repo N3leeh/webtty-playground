@@ -1,20 +1,27 @@
 ---
-# - name: Create a network with custom IPAM config
-#   docker_network:
-#     name: 
-#     ipam_config:
-#       - subnet: 172.3.27.0/24
-#         gateway: 172.3.27.2
-#         iprange: 172.3.27.0/26
-#         aux_addresses:
-#           host1: 172.3.27.3
-#           host2: 172.3.27.4
+
+- name: Check if host network exists
+  docker_network_info:
+    name: host
+  register: docker_host_network
+
+- name: Debugging
+  debug:
+    var: docker_bridge.network
+  when: docker_host_network.exists
+
+- name: Create a host network if not present
+  docker_network:
+    name: host
+    driver: host 
+  when: not docker_host_network.exists
 
 - name: Run Webtty container
   docker_container:
     name: webtty
     state: started
-    network_mode: host
+    networks:
+      - name: host
     image: wettyoss/wetty
     command: 
       - wetty
