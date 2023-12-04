@@ -1,0 +1,71 @@
+---
+- name: Ensure jailed group exits
+  group:
+    name: jailed
+    state: present
+
+- name: "Users should belong to jailed group"
+  user:
+    name: "{{ item }}"
+    groups: jailed
+    append: yes
+  with_items: "{{ ssh_jailed_users }}"
+  when: (ssh_jailed_users|length>0)
+
+# - name: "Security: jailed users must not belong to docker group"
+#   shell: |
+#     id -Gn {{ item }} |grep docker && deluser {{ item }} docker || exit 0
+#   with_items: "{{ ssh_jailed_users }}"
+#   when: (ssh_allowed_users|length>0)
+
+# - name: "Security: jailed users must not belong to sudo group"
+#   shell: |
+#     id -Gn {{ item }} |grep sudo && deluser {{ item }} sudo || exit 0
+#   with_items: "{{ ssh_jailed_users }}"
+#   when: (ssh_allowed_users|length>0)
+
+- name: Ensure all jailed users belong to unprivileged groups
+  block:
+    - name: Lookup user data
+      user:
+        name: {{ item }}
+        state: present
+      register: {{ item }}_data
+    
+    - name: remove {{ item }} user from docker group
+      command: "gpasswd -d {{ item }} docker"
+      when: {{ item }}_data.groups is defined and 'docker' in {{ item }}_data.groups
+
+    - name: remove {{ item }} user from sudo group
+      command: "gpasswd -d {{ item }} sudo"
+      when: {{ item }}_data.groups is defined and 'sudo' in {{ item }}_data.groups
+  with_items: "{{ ssh_jailed_users }}"
+  when: (ssh_jailed_users|length>0)
+
+- name: Copy files/containerize.sh to /usr/local/containerize.sh
+  copy:
+    src: files/containerize.sh
+    dest: /usr/local/containerize.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Allow password-less sudo on /usr/local/containerize.sh for jailed users
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^%jailed ALL=(ALL) NOPASSWD: /usr/local/containerize.sh'
+    line: '%jailed ALL=(ALL) NOPASSWD: /usr/local/containerize.sh'
+    validate: 'visudo -cf %s'
+
+- name: Insert/Update Match Group in /etc/ssh/sshd_config
+  blockinfile:
+    path: /etc/ssh/sshd_config
+    insertafter: EOF
+    block: |
+      Match Group jailed
+            ForceCommand sudo /usr/local/containerize.sh
+            AllowTcpForwarding no
+            PermitTunnel no
+            X11Forwarding no
+  notify: restart sshd

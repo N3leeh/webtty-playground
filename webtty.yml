@@ -1,7 +1,7 @@
 ---
 # file: webtty.yml
 
-- name: Set up local workstation
+- name: Set up WebUI Shell
   hosts: local
   vars_files:
     - vars/nginx.yml

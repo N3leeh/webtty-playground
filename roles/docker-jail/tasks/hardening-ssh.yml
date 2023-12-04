@@ -1,0 +1,60 @@
+---
+# file: hardening-ssh.yml
+
+- name: Disable XForwarding
+  lineinfile: 
+    path: /etc/ssh/sshd_config
+    regexp: "^X11Forwarding"
+    line: "X11Forwarding no"
+    state: present
+  notify: restart sshd
+
+- name: MaxAuthTries 6
+  lineinfile: 
+    path: /etc/ssh/sshd_config
+    regexp: "^MaxAuthTries"
+    line: "MaxAuthTries 6"
+    state: present
+  notify: restart sshd
+
+- name: MaxSessions 10
+  lineinfile: 
+    path: /etc/ssh/sshd_config
+    regexp: "^MaxSessions"
+    line: "MaxSessions 10"
+    state: present
+  notify: restart sshd
+
+- name: LoginGraceTime 1m
+  lineinfile: 
+    path: /etc/ssh/sshd_config
+    regexp: "^LoginGraceTime"
+    line: "LoginGraceTime 1m"
+    state: present
+  notify: restart sshd
+
+- name: Copy Banner
+  copy:
+    src: files/issue.net
+    dest: /etc/issue.net
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Setup Banner
+  lineinfile: 
+    path: /etc/ssh/sshd_config
+    regexp: "^Banner "
+    line: "Banner /etc/issue.net"
+    state: present
+  notify: restart sshd
+
+- name: Allowed users/groups
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    insertbefore: BOF
+    regexp: '^AllowUsers'
+    line: "AllowUsers {{ssh_allowed_users | join(' ')}}"
+    state: present
+  notify: restart sshd
+  when: (ssh_allowed_users|length>0)
