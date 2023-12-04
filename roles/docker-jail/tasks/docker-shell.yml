@@ -23,22 +23,18 @@
   with_items: "{{ ssh_jailed_users }}"
   when: (ssh_jailed_users|length>0)
 
-# - name: "Security: jailed users must not belong to docker group"
-#   shell: |
-#     id -Gn {{ item }} |grep docker && deluser {{ item }} docker || exit 0
-#   with_items: "{{ ssh_jailed_users }}"
-#   when: (ssh_allowed_users|length>0)
-
-# - name: "Security: jailed users must not belong to sudo group"
-#   shell: |
-#     id -Gn {{ item }} |grep sudo && deluser {{ item }} sudo || exit 0
-#   with_items: "{{ ssh_jailed_users }}"
-#   when: (ssh_allowed_users|length>0)
-
 - name: Ensure all jailed users belong to unprivileged groups
   include_tasks: remove-groups.yml
   with_items: "{{ ssh_jailed_users }}"
   when: (ssh_jailed_users|length>0)
+
+- name: Build jailed container
+  community.docker.docker_image:
+    build:
+      path: roles/docker-jail/files/
+    name: debian-jail
+    tag: latest
+    source: build
 
 - name: Copy files/containerize.sh to /usr/local/containerize.sh
   copy:
