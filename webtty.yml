@@ -5,8 +5,8 @@
   hosts: local
   vars_files:
     - vars/nginx.yml
-  var:
-    - ssh_jailed_users: []
+  vars:
+    - ssh_jailed_users: ["studenta", "StudentB"]
   roles:
     - role: certificates
     - role: geerlingguy.docker
