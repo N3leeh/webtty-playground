@@ -10,7 +10,7 @@ ExecStartPre=-/usr/bin/docker stop %n
 ExecStartPre=-/usr/bin/docker rm %n
 ExecStartPre=/usr/bin/docker pull wettyoss/wetty:latest
 ExecStart=/usr/bin/docker run --rm --name %n \
--p 3000:3000 \
+-p {{ docker_bridge.network.IPAM.Config[0].Gateway }}:3000:3000 \
 wettyoss/wetty:latest \
 wetty \
 --base=/ \
