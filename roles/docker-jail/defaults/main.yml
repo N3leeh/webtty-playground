@@ -1,2 +1,2 @@
-ssh_jailed_users=[]
-ssh_allowed_users=["root"]
+ssh_jailed_users: []
+ssh_allowed_users: ["root"]
