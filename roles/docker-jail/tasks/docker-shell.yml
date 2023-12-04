@@ -37,6 +37,11 @@
     group: root
     mode: '0755'
 
+- name: Ensure sudo is installed
+  package:
+    name: sudo
+    state: present
+
 - name: Allow password-less sudo on /usr/local/containerize.sh for jailed users
   lineinfile:
     dest: /etc/sudoers
