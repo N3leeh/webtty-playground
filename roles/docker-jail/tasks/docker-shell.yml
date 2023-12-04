@@ -30,15 +30,15 @@
       user:
         name: {{ item }}
         state: present
-      register: {{ item }}_data
+      register: user_data
     
     - name: remove {{ item }} user from docker group
       command: "gpasswd -d {{ item }} docker"
-      when: {{ item }}_data.groups is defined and 'docker' in {{ item }}_data.groups
+      when: user_data.groups is defined and 'docker' in user_data.groups
 
     - name: remove {{ item }} user from sudo group
       command: "gpasswd -d {{ item }} sudo"
-      when: {{ item }}_data.groups is defined and 'sudo' in {{ item }}_data.groups
+      when: user_data.groups is defined and 'sudo' in user_data.groups
   with_items: "{{ ssh_jailed_users }}"
   when: (ssh_jailed_users|length>0)
 
