@@ -10,6 +10,6 @@
   roles:
     - role: certificates
     - role: geerlingguy.docker
-    - role: geerlingguy.nginx
     - role: webtty
+    - role: geerlingguy.nginx
     - role: docker-jail
