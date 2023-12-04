@@ -25,20 +25,7 @@
 #   when: (ssh_allowed_users|length>0)
 
 - name: Ensure all jailed users belong to unprivileged groups
-  block:
-    - name: Lookup user data
-      user:
-        name: "{{ item }}"
-        state: present
-      register: user_data
-    
-    - name: remove {{ item }} user from docker group
-      command: "gpasswd -d {{ item }} docker"
-      when: user_data.groups is defined and 'docker' in user_data.groups
-
-    - name: remove {{ item }} user from sudo group
-      command: "gpasswd -d {{ item }} sudo"
-      when: user_data.groups is defined and 'sudo' in user_data.groups
+  include_tasks: remove-groups.yml
   with_items: "{{ ssh_jailed_users }}"
   when: (ssh_jailed_users|length>0)
 
