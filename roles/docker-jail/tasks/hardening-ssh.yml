@@ -7,7 +7,7 @@
     regexp: "^X11Forwarding"
     line: "X11Forwarding no"
     state: present
-  notify: restart sshd
+
 
 - name: MaxAuthTries 6
   lineinfile: 
@@ -15,7 +15,6 @@
     regexp: "^MaxAuthTries"
     line: "MaxAuthTries 6"
     state: present
-  notify: restart sshd
 
 - name: MaxSessions 10
   lineinfile: 
@@ -23,7 +22,6 @@
     regexp: "^MaxSessions"
     line: "MaxSessions 10"
     state: present
-  notify: restart sshd
 
 - name: LoginGraceTime 1m
   lineinfile: 
@@ -31,7 +29,6 @@
     regexp: "^LoginGraceTime"
     line: "LoginGraceTime 1m"
     state: present
-  notify: restart sshd
 
 - name: Copy Banner
   copy:
@@ -47,14 +44,3 @@
     regexp: "^Banner "
     line: "Banner /etc/issue.net"
     state: present
-  notify: restart sshd
-
-- name: Allowed users/groups
-  lineinfile:
-    dest: /etc/ssh/sshd_config
-    insertbefore: BOF
-    regexp: '^AllowUsers'
-    line: "AllowUsers {{ssh_allowed_users | join(' ')}}"
-    state: present
-  notify: restart sshd
-  when: (ssh_allowed_users|length>0)

@@ -3,3 +3,4 @@
 
 - include: docker-shell.yml
 - include: hardening-ssh.yml
+  notify: restart sshd
