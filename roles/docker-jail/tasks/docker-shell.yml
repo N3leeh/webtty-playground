@@ -71,4 +71,5 @@
             AllowTcpForwarding no
             PermitTunnel no
             X11Forwarding no
+      Match All
   notify: restart sshd

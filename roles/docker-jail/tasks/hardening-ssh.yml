@@ -4,7 +4,7 @@
 - name: Disable XForwarding
   lineinfile: 
     path: /etc/ssh/sshd_config
-    regexp: "^X11Forwarding"
+    regexp: "X11Forwarding "
     line: "X11Forwarding no"
     state: present
 
@@ -12,21 +12,21 @@
 - name: MaxAuthTries 6
   lineinfile: 
     path: /etc/ssh/sshd_config
-    regexp: "^MaxAuthTries"
+    regexp: "MaxAuthTries "
     line: "MaxAuthTries 6"
     state: present
 
 - name: MaxSessions 10
   lineinfile: 
     path: /etc/ssh/sshd_config
-    regexp: "^MaxSessions"
+    regexp: "MaxSessions "
     line: "MaxSessions 10"
     state: present
 
 - name: LoginGraceTime 1m
   lineinfile: 
     path: /etc/ssh/sshd_config
-    regexp: "^LoginGraceTime"
+    regexp: "LoginGraceTime "
     line: "LoginGraceTime 1m"
     state: present
 
@@ -41,6 +41,6 @@
 - name: Setup Banner
   lineinfile: 
     path: /etc/ssh/sshd_config
-    regexp: "^Banner "
+    regexp: "Banner "
     line: "Banner /etc/issue.net"
     state: present
