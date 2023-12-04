@@ -10,3 +10,4 @@
     - role: geerlingguy.docker
     - role: geerlingguy.nginx
     - role: webtty
+    - role: docker-jail
