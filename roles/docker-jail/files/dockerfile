@@ -2,4 +2,7 @@ FROM debian:bookworm
 
 RUN apt update && apt install -y \
     procps \
+    nano \
+    vim \
+    sudo \
     && rm -rf /var/list/apt/lists/*
