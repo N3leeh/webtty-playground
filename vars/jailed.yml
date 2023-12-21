@@ -1,0 +1,3 @@
+---
+ssh_jailed_users: ["max", "mellanie"]
+initial_password_suffix: "Start123"

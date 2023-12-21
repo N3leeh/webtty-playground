@@ -5,9 +5,7 @@
   hosts: local
   vars_files:
     - vars/nginx.yml
-  vars:
-    - ssh_jailed_users: ["max", "mellanie"]
-    - initial_password_suffix: "Start123"
+    - vars/jailed.yml
   roles:
     - role: certificates
     - role: geerlingguy.docker

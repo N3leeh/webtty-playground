@@ -5,6 +5,8 @@ RUN apt update && apt install -y \
     nano \
     vim \
     sudo \
+    less \
+    python3 \
     && rm -rf /var/list/apt/lists/*
 
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers

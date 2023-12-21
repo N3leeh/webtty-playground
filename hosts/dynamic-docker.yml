@@ -3,6 +3,7 @@
 plugin: community.docker.docker_containers
 docker_host: unix://var/run/docker.sock
 verbose_output: true
+use_extra_vars: true
 keyed_groups:
   - prefix: state
     key: 'docker_state.Status'
