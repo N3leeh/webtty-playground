@@ -17,4 +17,4 @@ if ! command -v ansible &> /dev/null;then
   fi
 fi
 ansible-galaxy role install -r requirements.yml
-ansible-playbook -i hosts webtty.yml
+ansible-playbook $PLAYBOOK

@@ -1,0 +1,7 @@
+---
+# file: webtty.yml
+
+- name: Ping
+  hosts: label_purpose_jail,&state_running
+  tasks:
+    - ping

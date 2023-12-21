@@ -1,0 +1,14 @@
+---
+# Minimal example using local Docker daemon
+plugin: community.docker.docker_containers
+docker_host: unix://var/run/docker.sock
+verbose_output: true
+keyed_groups:
+  - prefix: state
+    key: 'docker_state.Status'
+  - prefix: os
+    key: docker_platform
+  - prefix: image
+    key: 'docker_config.Image'
+  - prefix: label
+    key: 'docker_config.Labels'
