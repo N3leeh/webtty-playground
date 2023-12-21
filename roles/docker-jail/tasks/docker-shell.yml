@@ -36,6 +36,7 @@
     name: debian-jail
     tag: latest
     source: build
+    force: true
 
 - name: Copy files/containerize.sh to /usr/local/containerize.sh
   copy:
