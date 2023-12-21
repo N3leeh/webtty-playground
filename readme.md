@@ -6,6 +6,7 @@ Quick ansible playbook to install locally these requirements:
 - Creates group `jailed` and users from `ssh_jailed_users` variable
     - users expire within 24 hours
     - users with group `jailed` will connect to unprivileged docker container
+    - Set inital password of $USERNAME concat with initial_password_suffix variable (i.e. `maxStart123`).
 
 ## Usage
 Entrypoint is the `./bootstrap.sh` file to install dependencies (i.e. ansible and galaxy roles) and start the playbook.

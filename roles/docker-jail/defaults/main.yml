@@ -1,1 +1,2 @@
 ssh_jailed_users: []
+initial_password_suffix: ""
