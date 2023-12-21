@@ -4,4 +4,5 @@
 - name: Ping
   hosts: label_purpose_jail,&state_running
   tasks:
-    - ping
+    - name: Hello, are you there?
+      ansible.builtin.ping:
