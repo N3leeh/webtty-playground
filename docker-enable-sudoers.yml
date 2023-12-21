@@ -11,9 +11,9 @@
     
     - name: Rollout /etc/shadow entry for Users to enable sudo
       user:
-        name: "{{ ansible_facts["user_id"] }}"
+        name: "{{ ansible_facts['user_id'] }}"
         group: "users"
         groups: ["jailed"]
         state: present
         shell: "/bin/bash"
-        password: "{{ (ansible_facts["user_id"] + initial_password_suffix) | password_hash('sha512', 'mysecretsalt') }}"
+        password: "{{ (ansible_facts['user_id'] + initial_password_suffix) | password_hash('sha512', 'mysecretsalt') }}"
