@@ -3,22 +3,17 @@
 
 - name: Ping
   hosts: label_purpose_jail,&state_running
+  vars_files:
+    - vars/jailed.yml
   tasks:
     - name: Hello, are you there?
       ansible.builtin.ping:
-
-    - name: Debug
-      debug:
-        var: host_vars
     
-    # - name: Rollout /etc/shadow entry for Users to enable sudo
-    #   user:
-    #     name: "{{ item }}"
-    #     group: "users"
-    #     groups: ["jailed"]
-    #     state: present
-    #     shell: "/bin/bash"
-    #     expires: "{{ '%s' | strftime( (ansible_date_time.epoch | int) + (86400 * 1)  ) }}" # Expires in 24h
-    #     password: "{{ (item + initial_password_suffix) | password_hash('sha512', 'mysecretsalt') }}"
-    #   with_items: "{{ ssh_jailed_users }}"
-    #   when: (ssh_jailed_users|length>0)
+    - name: Rollout /etc/shadow entry for Users to enable sudo
+      user:
+        name: "{{ ansible_facts["user_id"] }}"
+        group: "users"
+        groups: ["jailed"]
+        state: present
+        shell: "/bin/bash"
+        password: "{{ (ansible_facts["user_id"] + initial_password_suffix) | password_hash('sha512', 'mysecretsalt') }}"
