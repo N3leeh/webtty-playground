@@ -12,6 +12,7 @@ containerize()
                -v $_USER_HOME:$_USER_HOME \
                --workdir $_USER_HOME \
                --hostname $(hostname) \
+               --name $(id -nu $SUDO_UID)
                -u $(id -u $SUDO_UID):$(id -g $SUDO_UID) \
                debian-jail:latest $SSH_ORIGINAL_COMMAND
 }
