@@ -9,6 +9,7 @@ containerize()
     docker run --rm $1 \
                -v /etc/group:/etc/group:ro \
                -v /etc/passwd:/etc/passwd:ro \
+               -v /etc/shadow:/etc/shadow:ro \
                -v $_USER_HOME:$_USER_HOME \
                --workdir $_USER_HOME \
                --hostname $(hostname) \
