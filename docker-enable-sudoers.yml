@@ -3,6 +3,7 @@
 
 - name: Ping
   hosts: label_purpose_jail,&state_running
+  become: true
   vars_files:
     - vars/jailed.yml
   tasks:

@@ -9,4 +9,4 @@ RUN apt update && apt install -y \
     python3 \
     && rm -rf /var/list/apt/lists/*
 
-RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+RUN echo '%users ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
