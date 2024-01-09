@@ -12,4 +12,5 @@ Quick ansible playbook to install locally these requirements:
 Entrypoint is the `./bootstrap.sh` file to install dependencies (i.e. ansible and galaxy roles) and start the playbook.
 
 ## Docker
-After the login of your students, you can execute `ansible-playbook docker-enable-sudoers.yml` in order to create the shadow entry inside the docker container. this will grant your students access to sudo.
+After the login of your students, you can execute `ansible-playbook docker-ping.yml` in order verifiy the running docker container.
+This playbook can be used as an example to rollout further training materials.
