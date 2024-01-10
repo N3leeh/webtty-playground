@@ -12,7 +12,7 @@ RUN apt update && apt install -y \
 RUN echo '%users ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 # Make it a bit fancy
-RUN <<EOF cat >> /etc/bash.bashrc
+RUN <<EOF cat >> /etc/profile
 export PS1="🐳 \u:\W# "
 export LS_OPTIONS='--color=auto'
 eval "$(dircolors)"
