@@ -1,0 +1,109 @@
+#!/bin/bash
+
+function err() {
+    echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $*" >&2
+}
+
+function info() {
+    echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $*" >&1
+}
+
+function script_init() {
+    # Useful constants
+    readonly orig_cwd="$PWD"
+    readonly script_params="$*"
+    readonly script_path="${BASH_SOURCE[0]}"
+    readonly script_dir="$(dirname "$script_path")"
+    readonly script_name="$(basename "$script_path")"
+}
+
+# DESC: Usage help
+# ARGS: None
+# OUTS: None
+function script_usage() {
+    cat << EOF
+Usage:
+    -h|--help                       Displays this help
+    -l|--list                       List all running containers with jailed users
+    -j|--jump CONTAINER [OPTIONS]   Jump into Container
+
+OPTIONS:
+    -r|--root                       Jumps into container with root privileges
+
+Examples:
+    Login into the container of max as root:
+    $ $script_name -j max-12343 -r
+
+    List running jail containers:
+    $ $script_name -l
+
+EOF
+}
+
+# DESC: Parameter parser
+# ARGS: $@ (optional): Arguments provided to the script
+# OUTS: Variables indicating command-line parameters and options
+EXEC_AS_ROOT=false
+function parse_params() {
+    local param
+    while [[ $# -gt 0 ]]; do
+        param="$1"
+        shift
+        case $param in
+            -h | --help)
+                script_usage
+                exit 0
+                ;;
+            -l | --list)
+                list_containers
+                exit 0
+                ;;
+            -j | --jump)
+                CONTAINER="$1"
+                shift
+                while [[ $# -gt 0 ]]; do
+                    param="$1"
+                    shift
+                    case $param in
+                        -r | --root)
+                            EXEC_AS_ROOT=true
+                            ;;
+                        *)
+                            ;;
+                    esac
+                done
+                jump_container
+                exit 0
+                ;;
+            *)
+                err "Invalid parameter was provided: $param"
+                exit 1
+                ;;
+        esac
+    done
+}
+
+function list_containers() {
+    local output_format="table {{.Names}}\t{{.Status}}\t{{.ID}}"
+    local output_filter="label=purpose=jail"
+    docker ps --format "$output_format" -f "$output_filter"
+}
+
+function jump_container() {
+    local container_name="$CONTAINER"
+    local container_login_as_root=$EXEC_AS_ROOT
+    if [[ $container_login_as_root == true ]];then
+        info "Login into container with root privileges"
+        docker exec -itu 0 $container_name /bin/bash
+    else
+        info "Login into container"
+        docker exec -it $container_name /bin/bash
+    fi
+}
+
+function main() {
+    script_init "$@"
+    parse_params "$@"
+}
+
+main "$@"

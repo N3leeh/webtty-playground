@@ -46,6 +46,14 @@
     group: root
     mode: '0755'
 
+- name: Copy files/wsadm to /usr/local/bin/
+  copy:
+    src: files/wsadm
+    dest: /usr/local/bin/wsadm
+    owner: root
+    group: root
+    mode: '0755'
+
 - name: Ensure sudo is installed
   package:
     name: sudo
