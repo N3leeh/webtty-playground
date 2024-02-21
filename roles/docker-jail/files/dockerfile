@@ -2,6 +2,7 @@ FROM debian:bookworm
 LABEL purpose=jail
 RUN apt update && apt install -y \
     procps \
+    iproute2 \
     nano \
     vim \
     sudo \
