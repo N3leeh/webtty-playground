@@ -16,6 +16,19 @@
   with_items: "{{ ssh_jailed_users }}"
   when: (ssh_jailed_users|length>0)
 
+- name: Ensure jailed user buchstabe exists
+  user:
+    name: "{{ item }}"
+    group: "users"
+    groups: ["jailed"]
+    state: present
+    uid: 910
+    shell: "/bin/bash"
+    expires: "{{ '%s' | strftime( (ansible_date_time.epoch | int) + (86400 * 1)  ) }}" # Expires in 24h
+    password: "{{ (item + initial_password_suffix) | password_hash('sha512', 'mysecretsalt') }}"
+  with_items: "{{ ssh_jailed_users }}"
+  when: (ssh_jailed_users|length>0)
+
 - name: "Users should belong to jailed group"
   user:
     name: "{{ item }}"
