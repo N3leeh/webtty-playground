@@ -43,6 +43,7 @@
   community.docker.docker_image:
     build:
       path: roles/docker-jail/files/
+    debug: true
     name: debian-jail
     tag: latest
     source: build
