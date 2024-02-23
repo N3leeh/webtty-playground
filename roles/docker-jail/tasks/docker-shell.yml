@@ -26,6 +26,13 @@
     expires: "{{ '%s' | strftime( (ansible_date_time.epoch | int) + (86400 * 1)  ) }}" # Expires in 24h
     password: "{{ ('buchstabe' + initial_password_suffix) | password_hash('sha512', 'mysecretsalt') }}"
 
+- name: Set environment variable for treasure hunt user buchstabe 
+  lineinfile:
+    dest: /home/buchstabe/.profile
+    state: present
+    regexp: '^Buchstabe="s"; export Buchstabe'
+    line: 'Buchstabe="s"; export Buchstabe'
+
 - name: "Users should belong to jailed group"
   user:
     name: "{{ item }}"
