@@ -11,7 +11,7 @@ containerize()
                -v /etc/passwd:/etc/passwd:ro \
                -v /etc/shadow:/etc/shadow:ro \
                -v $_USER_HOME:$_USER_HOME \
-               -v /home/buchstabe:/home/buchstabe \
+               -v /home/plankton:/home/plankton \
                --workdir $_USER_HOME \
                --hostname $(hostname) \
                --name "$(id -nu $SUDO_UID)-$(date "+%H%M%S")" \
