@@ -8,7 +8,6 @@
     line: "X11Forwarding no"
     state: present
 
-
 - name: MaxAuthTries 6
   lineinfile: 
     path: /etc/ssh/sshd_config
