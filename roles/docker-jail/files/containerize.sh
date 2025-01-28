@@ -10,6 +10,7 @@ containerize()
                -v /etc/group:/etc/group:ro \
                -v /etc/passwd:/etc/passwd:ro \
                -v /etc/shadow:/etc/shadow:ro \
+               -v /etc/quallenfischersong.sh:/etc/quallenfischersong.sh:ro \
                -v $_USER_HOME:$_USER_HOME \
                -v /home/plankton:/home/plankton \
                --workdir $_USER_HOME \
