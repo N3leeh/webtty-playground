@@ -19,6 +19,7 @@
 - name: Ensure jailed user plankton exists
   user:
     name: "plankton"
+    uid: 1400
     group: "users"
     groups: ["jailed"]
     state: present
