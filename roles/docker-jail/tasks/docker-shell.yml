@@ -31,8 +31,8 @@
   lineinfile:
     dest: /home/plankton/.profile
     state: present
-    regexp: '^Buchstabe="s"; export Buchstabe'
-    line: 'Buchstabe="s"; export Buchstabe'
+    regexp: '^Buchstabe="y"; export Buchstabe'
+    line: 'Buchstabe="y"; export Buchstabe'
 
 - name: "Users should belong to jailed group"
   user:
