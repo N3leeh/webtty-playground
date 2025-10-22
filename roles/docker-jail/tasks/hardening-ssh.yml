@@ -2,35 +2,35 @@
 # file: hardening-ssh.yml
 
 - name: Disable XForwarding
-  lineinfile: 
+  ansible.builtin.lineinfile: 
     path: /etc/ssh/sshd_config
     regexp: "^#?X11Forwarding "
     line: "X11Forwarding no"
     state: present
 
 - name: MaxAuthTries 6
-  lineinfile: 
+  ansible.builtin.lineinfile: 
     path: /etc/ssh/sshd_config
     regexp: "^#?MaxAuthTries "
     line: "MaxAuthTries 6"
     state: present
 
 - name: MaxSessions 10
-  lineinfile: 
+  ansible.builtin.lineinfile: 
     path: /etc/ssh/sshd_config
     regexp: "^#?MaxSessions "
     line: "MaxSessions 10"
     state: present
 
 - name: LoginGraceTime 1m
-  lineinfile: 
+  ansible.builtin.lineinfile: 
     path: /etc/ssh/sshd_config
     regexp: "^#?LoginGraceTime "
     line: "LoginGraceTime 1m"
     state: present
 
 - name: Copy Banner
-  copy:
+  ansible.builtin.copy:
     src: files/issue.net
     dest: /etc/issue.net
     owner: root
@@ -38,7 +38,7 @@
     mode: '0644'
 
 - name: Setup Banner
-  lineinfile: 
+  ansible.builtin.lineinfile: 
     path: /etc/ssh/sshd_config
     regexp: "^#?Banner "
     line: "Banner /etc/issue.net"

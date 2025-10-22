@@ -1,6 +1,6 @@
 ---
 # file: main.yml
 
-- include: docker-shell.yml
-- include: hardening-ssh.yml
+- ansible.builtin.include_tasks: docker-shell.yml
+- ansible.builtin.include_tasks: hardening-ssh.yml
   notify: restart sshd

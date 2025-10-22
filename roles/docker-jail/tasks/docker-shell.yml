@@ -1,11 +1,11 @@
 ---
 - name: Ensure jailed group exits
-  group:
+  ansible.builtin.group:
     name: jailed
     state: present
 
 - name: Ensure jailed users exists
-  user:
+  ansible.builtin.user:
     name: "{{ item }}"
     group: "users"
     groups: ["jailed"]
@@ -17,7 +17,7 @@
   when: (ssh_jailed_users|length>0)
 
 - name: Ensure jailed user plankton exists
-  user:
+  ansible.builtin.user:
     name: "plankton"
     uid: 1400
     group: "users"
@@ -28,14 +28,14 @@
     password: "{{ ('plankton' + initial_password_suffix) | password_hash('sha512', 'mysecretsalt') }}"
 
 - name: Set environment variable for treasure hunt user plankton 
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /home/plankton/.profile
     state: present
-    regexp: '^Buchstabe="y"; export Buchstabe'
-    line: 'Buchstabe="y"; export Buchstabe'
+    regexp: '^KAREN="p"; export $KAREN'
+    line: 'KAREN="p"; export $KAREN'
 
 - name: "Users should belong to jailed group"
-  user:
+  ansible.builtin.user:
     name: "{{ item }}"
     groups: jailed
     append: yes
@@ -43,7 +43,7 @@
   when: (ssh_jailed_users|length>0)
 
 - name: Ensure all jailed users belong to unprivileged groups
-  include_tasks: remove-groups.yml
+  ansible.builtin.include_tasks: remove-groups.yml
   with_items: "{{ ssh_jailed_users }}"
   when: (ssh_jailed_users|length>0)
 
@@ -58,7 +58,7 @@
     force_tag: true
 
 - name: Copy files/containerize.sh to /usr/local/containerize.sh
-  copy:
+  ansible.builtin.copy:
     src: files/containerize.sh
     dest: /usr/local/containerize.sh
     owner: root
@@ -66,7 +66,7 @@
     mode: '0755'
 
 - name: Copy files/wsadm to /usr/local/bin/
-  copy:
+  ansible.builtin.copy:
     src: files/wsadm
     dest: /usr/local/bin/wsadm
     owner: root
@@ -74,12 +74,12 @@
     mode: '0755'
 
 - name: Ensure sudo is installed
-  package:
+  ansible.builtin.package:
     name: sudo
     state: present
 
 - name: Allow password-less sudo on /usr/local/containerize.sh for jailed users
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /etc/sudoers
     state: present
     regexp: '^%jailed ALL=(ALL) NOPASSWD: /usr/local/containerize.sh'
@@ -87,7 +87,7 @@
     validate: 'visudo -cf %s'
 
 - name: Insert/Update Match Group in /etc/ssh/sshd_config
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: /etc/ssh/sshd_config
     insertafter: EOF
     block: |

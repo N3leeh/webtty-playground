@@ -6,7 +6,7 @@
   register: docker_bridge
 
 - name: Create Webtty systemd service file
-  template:
+  ansible.builtin.template:
     src: templates/webtty.service.j2
     dest: /etc/systemd/system/webtty.service
 
