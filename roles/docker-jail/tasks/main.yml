@@ -3,4 +3,3 @@
 
 - ansible.builtin.include_tasks: docker-shell.yml
 - ansible.builtin.include_tasks: hardening-ssh.yml
-  notify: restart sshd

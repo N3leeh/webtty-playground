@@ -7,6 +7,7 @@
     regexp: "^#?X11Forwarding "
     line: "X11Forwarding no"
     state: present
+  notify: restart sshd
 
 - name: MaxAuthTries 6
   ansible.builtin.lineinfile: 
@@ -14,6 +15,7 @@
     regexp: "^#?MaxAuthTries "
     line: "MaxAuthTries 6"
     state: present
+  notify: restart sshd
 
 - name: MaxSessions 10
   ansible.builtin.lineinfile: 
@@ -21,6 +23,7 @@
     regexp: "^#?MaxSessions "
     line: "MaxSessions 10"
     state: present
+  notify: restart sshd
 
 - name: LoginGraceTime 1m
   ansible.builtin.lineinfile: 
@@ -28,6 +31,7 @@
     regexp: "^#?LoginGraceTime "
     line: "LoginGraceTime 1m"
     state: present
+  notify: restart sshd
 
 - name: Copy Banner
   ansible.builtin.copy:
@@ -36,6 +40,7 @@
     owner: root
     group: root
     mode: '0644'
+  notify: restart sshd
 
 - name: Setup Banner
   ansible.builtin.lineinfile: 
@@ -43,3 +48,4 @@
     regexp: "^#?Banner "
     line: "Banner /etc/issue.net"
     state: present
+  notify: restart sshd
