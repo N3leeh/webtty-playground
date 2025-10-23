@@ -7,7 +7,7 @@ PLAYBOOK="webtty.yml"
 
 if ! command -v ansible &> /dev/null;then
   echo "ansible not found. Attempt to install."
-  if dpkg -S /bin/ls >/dev/null 2>&1;then
+  if [-f "/usr/bin/apt" ];then
     apt update && apt install -y ansible
   elif rpm -q -f /bin/ls >/dev/null 2>&1;then
     yum install ansible
