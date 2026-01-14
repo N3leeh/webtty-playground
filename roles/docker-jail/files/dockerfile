@@ -15,6 +15,8 @@ RUN apt update && apt install -y \
 
 RUN echo '%users ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
+ENV LANG de_DE.UTF-8
+
 # Make it a bit fancy
 RUN echo 'export PS1="🐳 \u:\W# "' >> /etc/profile
 RUN echo 'export LS_OPTIONS="--color=auto"' >> /etc/profile
