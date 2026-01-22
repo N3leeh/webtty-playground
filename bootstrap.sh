@@ -8,7 +8,7 @@ PLAYBOOK="webtty.yml"
 if ! command -v ansible &> /dev/null;then
   echo "ansible not found. Attempt to install."
   if [-f "/usr/bin/apt" ];then
-    apt update && apt install -y ansible
+    apt update && apt install -y ansible python3-passlib
   elif rpm -q -f /bin/ls >/dev/null 2>&1;then
     yum install ansible
   else
