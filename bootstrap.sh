@@ -16,5 +16,5 @@ if ! command -v ansible &> /dev/null;then
     exit 1
   fi
 fi
-ansible-galaxy role install -r requirements.yml
+ansible-galaxy role install -r requirements.yml -p roles
 ansible-playbook $PLAYBOOK

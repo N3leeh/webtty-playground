@@ -13,3 +13,10 @@
     - role: webtty
     - role: geerlingguy.nginx
     - role: docker-jail
+
+  tasks:
+  
+    - name: Restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
