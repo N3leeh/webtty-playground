@@ -84,10 +84,20 @@
     state: present
 
 - name: Allow password-less sudo on /usr/local/containerize.sh for jailed users
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/workshop-jail
+    content: |
+      # Managed by Ansible (webtty-playground)
+      %jailed ALL=(root) NOPASSWD: /usr/local/containerize.sh
+    owner: root
+    group: root
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+- name: Remove old sudo rule from /etc/sudoers (now in /etc/sudoers.d/workshop-jail)
   ansible.builtin.lineinfile:
     dest: /etc/sudoers
-    state: present
-    regexp: '^%jailed ALL=(ALL) NOPASSWD: /usr/local/containerize.sh'
+    state: absent
     line: '%jailed ALL=(ALL) NOPASSWD: /usr/local/containerize.sh'
     validate: 'visudo -cf %s'
 
@@ -98,8 +108,13 @@
     block: |
       Match Group jailed
             ForceCommand sudo /usr/local/containerize.sh
+            DisableForwarding yes
             AllowTcpForwarding no
+            AllowAgentForwarding no
+            AllowStreamLocalForwarding no
             PermitTunnel no
             X11Forwarding no
+            PermitUserRC no
       Match All
+    validate: '/usr/sbin/sshd -t -f %s'
   notify: restart sshd

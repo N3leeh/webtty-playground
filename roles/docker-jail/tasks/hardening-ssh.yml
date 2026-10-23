@@ -2,32 +2,36 @@
 # file: hardening-ssh.yml
 
 - name: Disable XForwarding
-  ansible.builtin.lineinfile: 
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
+    validate: '/usr/sbin/sshd -t -f %s'
     regexp: "^#?X11Forwarding "
     line: "X11Forwarding no"
     state: present
   notify: restart sshd
 
 - name: MaxAuthTries 6
-  ansible.builtin.lineinfile: 
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
+    validate: '/usr/sbin/sshd -t -f %s'
     regexp: "^#?MaxAuthTries "
     line: "MaxAuthTries 6"
     state: present
   notify: restart sshd
 
 - name: MaxSessions 10
-  ansible.builtin.lineinfile: 
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
+    validate: '/usr/sbin/sshd -t -f %s'
     regexp: "^#?MaxSessions "
     line: "MaxSessions 10"
     state: present
   notify: restart sshd
 
 - name: LoginGraceTime 1m
-  ansible.builtin.lineinfile: 
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
+    validate: '/usr/sbin/sshd -t -f %s'
     regexp: "^#?LoginGraceTime "
     line: "LoginGraceTime 1m"
     state: present
@@ -43,8 +47,9 @@
   notify: restart sshd
 
 - name: Setup Banner
-  ansible.builtin.lineinfile: 
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
+    validate: '/usr/sbin/sshd -t -f %s'
     regexp: "^#?Banner "
     line: "Banner /etc/issue.net"
     state: present
