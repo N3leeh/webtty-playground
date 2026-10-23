@@ -1,20 +1,28 @@
 #!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
 # Main playbook
 PLAYBOOK="webtty.yml"
 
-if ! command -v ansible &> /dev/null;then
+# Immer aus dem Repo-Verzeichnis heraus arbeiten, damit ansible.cfg,
+# relative Pfade und vars/ gefunden werden.
+cd "$(dirname "$(readlink -f "$0")")"
+
+if ! command -v ansible &> /dev/null; then
   echo "ansible not found. Attempt to install."
-  if [-f "/usr/bin/apt" ];then
-    apt update && apt install -y ansible python3-passlib
-  elif rpm -q -f /bin/ls >/dev/null 2>&1;then
-    yum install ansible
+  if [ -x "/usr/bin/apt-get" ]; then
+    apt-get update && apt-get install -y ansible python3-passlib
+  elif rpm -q -f /bin/ls >/dev/null 2>&1; then
+    yum install -y ansible python3-passlib
   else
     echo "Don't know this package system (neither RPM nor DEB)."
     exit 1
   fi
 fi
+
+# Rollen und Collections aus requirements.yml installieren
 ansible-galaxy role install -r requirements.yml -p roles
-ansible-playbook $PLAYBOOK
+ansible-galaxy collection install -r requirements.yml
+
+ansible-playbook "$PLAYBOOK" "$@"

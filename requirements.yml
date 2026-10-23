@@ -1,4 +1,19 @@
 ---
 # file: requirements.yml
-- name: geerlingguy.docker
-- name: geerlingguy.nginx
+#
+# Installation:
+#   ansible-galaxy role install -r requirements.yml -p roles
+#   ansible-galaxy collection install -r requirements.yml
+#
+# Empfehlung: Versionen fest pinnen (version: x.y.z), damit ein neuer
+# Release einer Rolle/Collection nicht unbemerkt das Setup verändert.
+
+roles:
+  - name: geerlingguy.docker
+  - name: geerlingguy.nginx
+
+collections:
+  # docker_image, docker_network_info, docker_network, docker_containers-Inventory
+  - name: community.docker
+  # openssl_privatekey, x509_certificate
+  - name: community.crypto
