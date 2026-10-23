@@ -1,0 +1,67 @@
+---
+# file: teardown.yml
+#
+# Räumt nach dem Workshop auf:
+#   - beendet laufende Jail-Container
+#   - löscht die Workshop-Accounts inkl. Home-Verzeichnis
+#   - entfernt das Jail-Image und das Jail-Netz
+#   - löscht die generierten Zugangsdaten (credentials/)
+#
+# Aufruf:  ansible-playbook teardown.yml
+# Vorher prüfen, was passieren würde:  ansible-playbook teardown.yml --check
+#
+# Achtung: Home-Verzeichnisse und Lösungen der Teilnehmenden werden
+# unwiderruflich gelöscht. Zusätzliche Accounts (z.B. plankton aus dem Repo
+# workshop_exercise) über -e '{"teardown_extra_users": ["plankton"]}' angeben.
+
+- name: Remove workshop environment
+  hosts: local
+  vars_files:
+    - vars/jailed.yml
+  vars:
+    teardown_extra_users: []
+    jail_network: "workshop-jail"
+    jail_credentials_dir: "{{ playbook_dir }}/credentials"
+
+  tasks:
+    - name: Find running jail containers
+      ansible.builtin.command: docker ps -q --filter label=purpose=jail
+      register: jail_containers
+      changed_when: false
+      check_mode: false
+
+    - name: Stop running jail containers
+      ansible.builtin.command: "docker stop {{ jail_containers.stdout_lines | join(' ') }}"
+      when: jail_containers.stdout_lines | length > 0
+
+    # Unveränderliche Dateien (chattr +i, z.B. aus Zusatzaufgaben) würden
+    # userdel -r scheitern lassen.
+    - name: Remove immutable flag from files in workshop home directories
+      ansible.builtin.command: "chattr -R -i /home/{{ item }}"
+      loop: "{{ ssh_jailed_users + teardown_extra_users }}"
+      changed_when: false
+      failed_when: false
+
+    - name: Remove workshop users and their home directories
+      ansible.builtin.user:
+        name: "{{ item }}"
+        state: absent
+        remove: true
+      loop: "{{ ssh_jailed_users + teardown_extra_users }}"
+
+    - name: Remove jail docker network
+      community.docker.docker_network:
+        name: "{{ jail_network }}"
+        state: absent
+      when: jail_network | length > 0
+
+    - name: Remove jail image
+      community.docker.docker_image:
+        name: debian-jail
+        tag: latest
+        state: absent
+
+    - name: Remove generated credentials
+      ansible.builtin.file:
+        path: "{{ jail_credentials_dir }}"
+        state: absent
