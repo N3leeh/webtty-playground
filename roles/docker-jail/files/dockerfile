@@ -1,6 +1,8 @@
 FROM debian:trixie
 LABEL purpose=jail
-RUN apt update && apt install -y \
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y \
     procps \
     iproute2 \
     iputils-ping \
@@ -15,11 +17,12 @@ RUN apt update && apt install -y \
     fortune \
     sl \
     locales-all \
-    && rm -rf /var/list/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
-RUN echo '%users ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+RUN echo '%users ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/workshop \
+    && chmod 0440 /etc/sudoers.d/workshop
 
-ENV LANG de_DE.UTF-8
+ENV LANG=de_DE.UTF-8
 
 # Make it a bit fancy
 RUN echo 'export PS1="🐳 \u:\W# "' >> /etc/profile

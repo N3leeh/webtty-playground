@@ -50,7 +50,7 @@
 - name: Build jailed container
   community.docker.docker_image:
     build:
-      path: roles/docker-jail/files/
+      path: "{{ role_path }}/files/"
     debug: true
     name: debian-jail
     tag: latest
