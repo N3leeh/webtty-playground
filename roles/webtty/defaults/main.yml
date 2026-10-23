@@ -1,0 +1,6 @@
+---
+# Docker-Image für wetty.
+# Empfehlung: auf eine feste Version pinnen (z.B. "wettyoss/wetty:<version>"
+# oder per Digest "@sha256:..."), damit nicht bei jedem Neustart des Dienstes
+# ungeprüft eine neue Version gezogen wird.
+webtty_image: "wettyoss/wetty:latest"
