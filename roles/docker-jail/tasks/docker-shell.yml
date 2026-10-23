@@ -57,9 +57,19 @@
     source: build
     force_tag: true
 
-- name: Copy files/containerize.sh to /usr/local/containerize.sh
-  ansible.builtin.copy:
-    src: files/containerize.sh
+- name: Ensure docker network for jail containers exists
+  community.docker.docker_network:
+    name: "{{ jail_network }}"
+    internal: "{{ jail_network_internal | bool }}"
+    driver_options:
+      # Container dürfen sich nicht gegenseitig erreichen
+      com.docker.network.bridge.enable_icc: "false"
+    state: present
+  when: jail_network | length > 0
+
+- name: Create /usr/local/containerize.sh from template
+  ansible.builtin.template:
+    src: containerize.sh.j2
     dest: /usr/local/containerize.sh
     owner: root
     group: root

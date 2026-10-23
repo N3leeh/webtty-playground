@@ -1,2 +1,39 @@
+---
+# Liste der Workshop-Teilnehmenden (Login-Namen)
 ssh_jailed_users: []
+
 initial_password_suffix: ""
+
+# --- Container --------------------------------------------------------------
+jail_image: "debian-jail:latest"
+
+# Eigenes Docker-Netz für die Jail-Container. "" = Docker-Standard-Bridge.
+jail_network: "workshop-jail"
+# true = kein Zugriff nach außen (kein Internet, kein apt im Container)
+jail_network_internal: true
+
+# Ressourcenlimits pro Sitzung. 0 bzw. "" = kein Limit.
+jail_pids_limit: 256
+jail_memory: "512m"
+jail_cpus: "1"
+
+# Alle Linux-Capabilities entfernen und nur die nötigen wieder hinzufügen.
+# Die Liste reicht für sudo, sudo -u, chown, chmod und kill.
+# Falls im Workshop etwas mit "Operation not permitted" scheitert, hier die
+# fehlende Capability ergänzen oder jail_cap_drop_all auf false setzen.
+jail_cap_drop_all: true
+jail_capabilities:
+  - CHOWN
+  - DAC_OVERRIDE
+  - DAC_READ_SEARCH
+  - FOWNER
+  - FSETID
+  - KILL
+  - SETGID
+  - SETUID
+  - AUDIT_WRITE
+
+# Zusätzliche Bind-Mounts im Docker-Format "quelle:ziel[:optionen]".
+# Mounts, deren Quelle auf dem Host (noch) nicht existiert, werden beim
+# Login übersprungen. Pfade dürfen keine Leerzeichen enthalten.
+jail_extra_mounts: []

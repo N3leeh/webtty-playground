@@ -2,3 +2,9 @@
 # Add users here
 ssh_jailed_users: ["max", "mellanie"]
 initial_password_suffix: "Start123"
+
+# Zusätzliche (schreibgeschützte) Mounts für die Schnitzeljagd aus dem
+# Repo workshop_exercise. Fehlende Quellen werden beim Login übersprungen.
+jail_extra_mounts:
+  - /etc/quallenfischen:/etc/quallenfischen:ro
+  - /home/plankton:/home/plankton:ro

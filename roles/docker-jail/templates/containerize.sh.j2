@@ -1,0 +1,85 @@
+#!/bin/sh
+# {{ ansible_managed }}
+#
+# Wird per ForceCommand (sshd) über sudo als root gestartet und sperrt den
+# eingeloggten User in einen kurzlebigen Docker-Container.
+
+set -u
+
+JAIL_DIR="/run/workshop-jail"
+
+# Schreibt eine shadow-Datei OHNE Passwort-Hashes für den Container.
+# Hintergrund: sudo (pam_unix account) erwartet für jeden User einen
+# shadow-Eintrag, sonst bricht es mit "account validation failure" ab.
+# Die echte /etc/shadow des Hosts darf aber nicht in den Container, weil
+# root im Container sonst alle Hashes des Hosts lesen kann.
+# Passwortfeld "*" = kein Login per Passwort möglich (nicht nötig, da
+# sudo im Container NOPASSWD ist).
+write_shadow()
+{
+    umask 077
+    mkdir -p "$JAIL_DIR"
+    _tmp=$(mktemp "$JAIL_DIR/shadow.XXXXXX") || exit 1
+    getent passwd | awk -F: '{ print $1 ":*:1:0:99999:7:::" }' > "$_tmp"
+    chmod 0640 "$_tmp"
+    mv -f "$_tmp" "$JAIL_DIR/shadow"
+}
+
+containerize()
+{
+    # safety... propably useless
+    if [ -z "${SUDO_UID:-}" ]; then exit 1; fi
+    _USER_NAME="$(id -un "$SUDO_UID")"
+    _USER_HOME="$(getent passwd "$_USER_NAME" | cut -d: -f6)"
+
+    write_shadow
+
+    # shellcheck disable=SC2086 # $1 (-it/-i) und SSH_ORIGINAL_COMMAND sollen gesplittet werden
+    exec docker run --rm $1 \
+               --label purpose=jail \
+{% if jail_network | length > 0 %}
+               --network {{ jail_network | quote }} \
+{% endif %}
+{% if jail_pids_limit | int > 0 %}
+               --pids-limit {{ jail_pids_limit | int }} \
+{% endif %}
+{% if jail_memory | length > 0 %}
+               --memory {{ jail_memory | quote }} \
+               --memory-swap {{ jail_memory | quote }} \
+{% endif %}
+{% if jail_cpus | string | length > 0 %}
+               --cpus {{ jail_cpus | quote }} \
+{% endif %}
+{% if jail_cap_drop_all | bool %}
+               --cap-drop ALL \
+{% for cap in jail_capabilities %}
+               --cap-add {{ cap | quote }} \
+{% endfor %}
+{% endif %}
+               -v /etc/group:/etc/group:ro \
+               -v /etc/passwd:/etc/passwd:ro \
+               -v "$JAIL_DIR/shadow":/etc/shadow:ro \
+{% for mount in jail_extra_mounts %}
+               $( [ -e {{ mount.split(':')[0] | quote }} ] && echo "-v {{ mount }}" ) \
+{% endfor %}
+               -v "$_USER_HOME":"$_USER_HOME" \
+               --workdir "$_USER_HOME" \
+               --hostname "$(hostname)" \
+               --name "$_USER_NAME-$(date "+%H%M%S")-$$" \
+               --user "$(id -u "$SUDO_UID"):$(id -g "$SUDO_UID")" \
+               {{ jail_image | quote }} ${SSH_ORIGINAL_COMMAND:-}
+}
+
+
+# must be run via sudo
+if [ -z "${SUDO_UID:-}" ] || [ "$SUDO_UID" -eq '0' ]; then
+    echo "script must be run sudo and not under root"
+    exit 1;
+fi
+
+# Check if TTY allocated
+if tty -s; then
+    containerize -it
+else
+    containerize -i
+fi

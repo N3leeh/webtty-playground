@@ -19,7 +19,13 @@ RUN apt-get update && apt-get install -y \
     locales-all \
     && rm -rf /var/lib/apt/lists/*
 
-RUN echo '%users ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/workshop \
+# "Set disable_coredump false" unterdrückt die Warnung
+# "sudo: setrlimit(RLIMIT_CORE): Operation not permitted", die erscheint,
+# wenn der Container ohne CAP_SYS_RESOURCE läuft (siehe jail_capabilities).
+RUN printf '%s\n' \
+        '%users ALL=(ALL) NOPASSWD:ALL' \
+        'Set disable_coredump false' \
+        > /etc/sudoers.d/workshop \
     && chmod 0440 /etc/sudoers.d/workshop
 
 ENV LANG=de_DE.UTF-8
