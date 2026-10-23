@@ -1,0 +1,40 @@
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Fehler in Shell-Skripten (z.B. "[-f" statt "[ -f") früh finden.
+      # Zunächst nur Fehler, nicht Warnungen/Stil, damit die Pipeline grün startet.
+      - name: shellcheck
+        run: shellcheck --severity=error bootstrap.sh roles/docker-jail/files/wsadm
+
+      - name: hadolint (Dockerfile)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: roles/docker-jail/files/dockerfile
+          failure-threshold: error
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ansible
+        run: pip install ansible-core passlib
+
+      - name: Install roles and collections
+        run: |
+          ansible-galaxy role install -r requirements.yml -p roles
+          ansible-galaxy collection install -r requirements.yml
+
+      - name: ansible-playbook --syntax-check
+        run: |
+          for pb in webtty.yml teardown.yml docker-ping.yml; do
+            ansible-playbook --syntax-check "$pb"
+          done
