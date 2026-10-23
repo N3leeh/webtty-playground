@@ -11,28 +11,23 @@
     #groups: ["jailed"]
     state: present
     shell: "/bin/bash"
-    expires: "{{ '%s' | strftime( (ansible_date_time.epoch | int) + (172800 * 1)  ) }}" # Expires in 24h
-    password: "{{ (item + initial_password_suffix) | password_hash('sha512', 'mysecretsalt') }}"
+    # Ablauf nach jail_account_lifetime_hours (Default 48h), tagesgenau
+    expires: "{{ (ansible_date_time.epoch | int) + (jail_account_lifetime_hours | int * 3600) }}"
+    # Standard: Zufallspasswort pro User, Klartext liegt auf dem Controller in
+    # jail_credentials_dir/<user> (erste Spalte). Der Salt wird dort ebenfalls
+    # gespeichert, dadurch bleibt der Hash bei jedem Lauf gleich (idempotent).
+    # Legacy: initial_password_suffix gesetzt -> "<user><suffix>".
+    password: >-
+      {{
+        (item + initial_password_suffix) | password_hash('sha512', (item | hash('sha256'))[:16])
+        if (initial_password_suffix | length > 0) else
+        lookup('ansible.builtin.password', jail_credentials_dir ~ '/' ~ item,
+               length=jail_password_length, chars=['ascii_letters', 'digits'],
+               encrypt='sha512_crypt')
+      }}
   with_items: "{{ ssh_jailed_users }}"
   when: (ssh_jailed_users|length>0)
-
-- name: Ensure jailed user plankton exists
-  ansible.builtin.user:
-    name: "plankton"
-    uid: 1400
-    group: "users"
-    groups: ["jailed"]
-    state: present
-    shell: "/bin/bash"
-    expires: "{{ '%s' | strftime( (ansible_date_time.epoch | int) + (172800 * 1)  ) }}" # Expires in 24h
-    password: "{{ ('plankton' + initial_password_suffix) | password_hash('sha512', 'mysecretsalt') }}"
-
-- name: Set environment variable for treasure hunt user plankton 
-  ansible.builtin.lineinfile:
-    dest: /home/plankton/.profile
-    state: present
-    regexp: '^KAREN="p"; export $KAREN'
-    line: 'KAREN="p"; export $KAREN'
+  no_log: true
 
 - name: "Users should belong to jailed group"
   ansible.builtin.user:

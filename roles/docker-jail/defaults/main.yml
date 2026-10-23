@@ -2,7 +2,21 @@
 # Liste der Workshop-Teilnehmenden (Login-Namen)
 ssh_jailed_users: []
 
+# --- Passwörter -------------------------------------------------------------
+# Für jeden User wird ein zufälliges Passwort erzeugt und auf dem
+# Ansible-Controller unter "{{ jail_credentials_dir }}/<user>" abgelegt
+# (Verzeichnis ist per .gitignore ausgeschlossen). Die erste Spalte der Datei
+# ist das Klartext-Passwort, das an die Teilnehmenden ausgegeben wird.
+jail_credentials_dir: "{{ playbook_dir }}/credentials"
+jail_password_length: 12
+
+# Veraltet: Wenn gesetzt, wird wie früher "<user><suffix>" als Passwort
+# verwendet statt eines Zufallspassworts. Nicht empfohlen - siehe readme.md.
 initial_password_suffix: ""
+
+# Wie lange die Accounts gültig sind (Stunden ab dem Playbook-Lauf).
+# Hinweis: /etc/shadow speichert das Ablaufdatum tagesgenau.
+jail_account_lifetime_hours: 48
 
 # --- Container --------------------------------------------------------------
 jail_image: "debian-jail:latest"
