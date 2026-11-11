@@ -21,9 +21,9 @@ nginx_vhosts:
 
   - listen: "443 ssl http2"
     server_name: "{{ ansible_fqdn }}"
-    #server_name_redirect: "www.example.com"
+    # server_name_redirect: "www.example.com"
     root: "/var/www"
-    #index: "index.php index.html index.htm"
+    # index: "index.php index.html index.htm"
     access_log: "nginx-access.log"
     error_log: "nginx-error.log"
     state: "present"

@@ -4,7 +4,7 @@ ssh_jailed_users: ["max", "mellanie"]
 # Passwörter werden zufällig erzeugt und liegen danach in ./credentials/<user>
 # (siehe readme.md). Das alte Schema "<user>Start123" ist bewusst entfernt,
 # weil es in diesem öffentlichen Repo für jeden lesbar war.
-#initial_password_suffix: ""
+# initial_password_suffix: ""
 
 # Zusätzliche (schreibgeschützte) Mounts für die Schnitzeljagd aus dem
 # Repo workshop_exercise. Fehlende Quellen werden beim Login übersprungen.

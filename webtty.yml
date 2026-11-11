@@ -14,7 +14,7 @@
     - role: docker-jail
 
   tasks:
-  
+
     - name: Restart nginx
       ansible.builtin.service:
         name: nginx
