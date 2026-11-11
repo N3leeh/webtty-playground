@@ -1,0 +1,19 @@
+---
+# ansible-lint-Konfiguration
+# Start mit Profil "basic"; später schrittweise auf "moderate"/"production"
+# erhöhen und die Ausnahmen unten abbauen.
+profile: basic
+
+exclude_paths:
+  - .git/
+  - .github/
+  - roles/geerlingguy.docker/
+  - roles/geerlingguy.nginx/
+  - hosts/
+
+# Regeln, die (noch) nur warnen statt fehlschlagen
+warn_list:
+  - name[casing]
+  - yaml[line-length]
+  - risky-file-permissions
+  - fqcn[action]          # docker_network_info ohne Collection-Präfix

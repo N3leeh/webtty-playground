@@ -1,0 +1,103 @@
+---
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PY_COLORS: "1"
+  ANSIBLE_FORCE_COLOR: "1"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Werkzeuge installieren
+        run: pip install ansible-core ansible-lint yamllint
+
+      - name: Rollen und Collections installieren
+        run: |
+          ansible-galaxy role install -r requirements.yml -p roles
+          ansible-galaxy collection install -r requirements.yml
+
+      - name: yamllint
+        run: yamllint -s .
+
+      - name: shellcheck
+        run: shellcheck -S warning bootstrap.sh roles/docker-jail/files/wsadm
+
+      - name: hadolint (Dockerfile)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: roles/docker-jail/files/dockerfile
+          failure-threshold: error
+
+      # Zunächst nicht blockierend: zeigt Verbesserungen an, ohne die
+      # Pipeline rot zu machen. Später "continue-on-error" entfernen.
+      - name: ansible-lint
+        continue-on-error: true
+        run: ansible-lint
+
+  syntax:
+    name: Syntax
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Ansible installieren
+        run: pip install ansible-core
+
+      - name: Rollen und Collections installieren
+        run: |
+          ansible-galaxy role install -r requirements.yml -p roles
+          ansible-galaxy collection install -r requirements.yml
+
+      - name: ansible-playbook --syntax-check
+        run: |
+          for pb in webtty.yml teardown.yml docker-ping.yml tests/jail-test.yml; do
+            echo "== $pb"
+            ansible-playbook --syntax-check -i localhost, "$pb"
+          done
+
+  jail-test:
+    name: Jail-Integrationstest
+    needs: [lint, syntax]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Eigenes venv, damit auch die Module (laufen per sudo als root)
+      # passlib und requests finden
+      - name: Ansible installieren
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install ansible-core passlib requests
+          "$RUNNER_TEMP/venv/bin/ansible-galaxy" collection install -r requirements.yml
+
+      # Baut das echte Jail-Image, legt einen Test-Account an und startet
+      # über containerize.sh echte Jail-Container (wie beim SSH-Login)
+      - name: tests/jail-test.yml
+        run: >-
+          "$RUNNER_TEMP/venv/bin/ansible-playbook" -i localhost, -c local
+          -e ansible_python_interpreter="$RUNNER_TEMP/venv/bin/python"
+          tests/jail-test.yml
+
+      - name: shellcheck (gerendertes containerize.sh)
+        run: shellcheck -S warning /usr/local/containerize.sh

@@ -1,0 +1,127 @@
+---
+# Integrationstest für die Jail-Umgebung (läuft in der CI auf einem
+# GitHub-Runner, kann aber auch auf einem Test-Server laufen).
+#
+# Legt einen Test-Account an, startet über /usr/local/containerize.sh echte
+# Jail-Container - genau wie beim SSH-Login - und prüft darin:
+#   - Login landet als richtiger User im Container
+#   - sudo im Container funktioniert (wird für die Schnitzeljagd gebraucht)
+#   - KEINE Passwort-Hashes des Hosts im Container
+#   - Ressourcenlimits, Capabilities, internes Netz, Read-only-Mounts
+#   - Login-Nachricht wird bei interaktivem Login angezeigt
+#
+# Aufruf:  ansible-playbook -i localhost, -c local tests/jail-test.yml
+# Danach wird der Test-Account wieder gelöscht.
+#
+# NICHT auf dem Workshop-Server während eines Workshops ausführen: der Test
+# baut das Jail-Image neu und ändert /usr/local/containerize.sh.
+
+- name: Jail-Integrationstest
+  hosts: all
+  become: true
+  vars:
+    ssh_jailed_users: ['jailtest']
+    jail_credentials_dir: "/tmp/jail-test-credentials"
+    jail_extra_mounts:
+      - /srv/jail-test-ro:/srv/jail-test-ro:ro
+    # false = vorhandenes Image debian-jail:latest verwenden (lokale Tests)
+    jail_test_build_image: true
+    # Befehl, mit dem der Test-User eine Sitzung startet (wie ForceCommand)
+    jail_login: "sudo -u jailtest sudo -n /usr/local/containerize.sh"
+
+  tasks:
+    - name: Ordner für read-only Mount-Test
+      ansible.builtin.file:
+        path: /srv/jail-test-ro
+        state: directory
+        mode: '0755'
+
+    - name: Accounts anlegen (Rolle docker-jail, users.yml)
+      ansible.builtin.include_role:
+        name: docker-jail
+        tasks_from: users
+
+    - name: Jail-Image bauen (Rolle docker-jail, image.yml)
+      ansible.builtin.include_role:
+        name: docker-jail
+        tasks_from: image
+      when: jail_test_build_image | bool
+
+    - name: Jail einrichten (Rolle docker-jail, jail.yml)
+      ansible.builtin.include_role:
+        name: docker-jail
+        tasks_from: jail
+
+    # --- Tests ---------------------------------------------------------------
+    # Ohne TTY liest die Shell im Container die Befehle von stdin.
+
+    - name: "Test: Sitzung im Container"
+      ansible.builtin.shell: |
+        {{ jail_login }} <<'EOF'
+        echo "USER=$(id -un)"
+        echo "GROUPS=$(id -Gn)"
+        test -f /.dockerenv && echo "IN_CONTAINER=yes"
+        sudo -n true && echo "SUDO=ok"
+        # Anzahl Einträge und Anzahl echter Hashes ($...) in /etc/shadow
+        echo "SHADOW_ENTRIES=$(sudo -n cat /etc/shadow | grep -c .)"
+        echo "SHADOW_HASHES=$(sudo -n cut -d: -f2 /etc/shadow | grep -c '^\$')"
+        sudo -n chown -R "$(id -un)" "$HOME" && echo "CHOWN=ok"
+        sudo -n mknod /tmp/x c 1 3 2>/dev/null && echo "MKNOD=allowed" || echo "MKNOD=denied"
+        ip route 2>/dev/null | grep -q '^default' && echo "DEFAULT_ROUTE=yes" || echo "DEFAULT_ROUTE=no"
+        echo "PIDS_MAX=$(cat /sys/fs/cgroup/pids.max 2>/dev/null || cat /sys/fs/cgroup/pids/pids.max 2>/dev/null)"
+        sudo -n touch /srv/jail-test-ro/x 2>/dev/null && echo "RO_MOUNT=writable" || echo "RO_MOUNT=readonly"
+        EOF
+      args:
+        executable: /bin/bash
+      register: session
+      changed_when: false
+
+    - name: Ausgabe der Sitzung
+      ansible.builtin.debug:
+        var: session.stdout_lines
+
+    - name: "Test: Ergebnisse prüfen"
+      ansible.builtin.assert:
+        that:
+          - "'USER=jailtest' in session.stdout_lines"
+          - "'IN_CONTAINER=yes' in session.stdout_lines"
+          - "'SUDO=ok' in session.stdout_lines"
+          - "'SHADOW_HASHES=0' in session.stdout_lines"
+          - "session.stdout_lines | select('match', '^SHADOW_ENTRIES=[1-9]') | list | length == 1"
+          - "session.stdout_lines | select('search', '^GROUPS=(.* )?users( |$)') | list | length == 1"
+          - "'CHOWN=ok' in session.stdout_lines"
+          - "'MKNOD=denied' in session.stdout_lines"
+          - "'DEFAULT_ROUTE=no' in session.stdout_lines or not (jail_network_internal | default(true) | bool)"
+          - "('PIDS_MAX=' ~ (jail_pids_limit | default(256))) in session.stdout_lines"
+          - "'RO_MOUNT=readonly' in session.stdout_lines"
+        quiet: true
+        fail_msg: "Jail-Test fehlgeschlagen - siehe Ausgabe der Sitzung oben."
+
+    - name: "Test: Login-Nachricht bei interaktivem Login (mit TTY)"
+      ansible.builtin.shell: "script -qec '{{ jail_login }}' /dev/null <<< 'exit'"
+      args:
+        executable: /bin/bash
+      register: tty_session
+      changed_when: false
+      when: jail_motd_template | default('workshop-motd.j2') | length > 0
+
+    - name: "Test: Login-Nachricht enthält den Namen"
+      ansible.builtin.assert:
+        that: "'Ahoi jailtest' in tty_session.stdout"
+        fail_msg: "{{ tty_session.stdout }}"
+        quiet: true
+      when: jail_motd_template | default('workshop-motd.j2') | length > 0
+
+    - name: "Test: Keine verwaisten Container"
+      ansible.builtin.command: docker ps -q --filter label=purpose=jail
+      register: leftover
+      changed_when: false
+      failed_when: leftover.stdout | length > 0
+
+  post_tasks:
+    - name: Test-Account entfernen
+      ansible.builtin.user:
+        name: jailtest
+        state: absent
+        remove: true
+      tags: ['cleanup']

@@ -43,6 +43,9 @@ Die wichtigsten Variablen (Defaults in `roles/docker-jail/defaults/main.yml`, Wo
 | `jail_extra_mounts` | `[]` | zusätzliche Bind-Mounts (`quelle:ziel[:ro]`) |
 | `webtty_allowed_networks` | `[]` | IP-Allowlist für die WebShell, leer = alle |
 | `webtty_image` | `wettyoss/wetty:latest` | wetty-Image (Empfehlung: Version pinnen) |
+| `jail_user_extra_groups` | `['users']` | Zusatzgruppen der Teilnehmenden (für sudo im Container nötig) |
+| `jail_privileged_groups` | `docker, sudo, ...` | aus diesen Gruppen werden Teilnehmende entfernt |
+| `jail_motd_template` | `workshop-motd.j2` | Login-Nachricht, `""` = keine |
 
 ## Sicherheitsmodell
 - Teilnehmende landen per `ForceCommand` in einem Container. Im Container haben Mitglieder der Gruppe `users` sudo (wird für die Schnitzeljagd gebraucht). **Root im Container ist Root auf den eingehängten Verzeichnissen des Hosts** (kein User-Namespace-Remapping). Deshalb:
@@ -58,6 +61,23 @@ Die wichtigsten Variablen (Defaults in `roles/docker-jail/defaults/main.yml`, Wo
 - **Versionen pinnen**: Galaxy-Rollen/Collections in `requirements.yml` und `webtty_image`.
 - `/etc/passwd` und `/etc/group` des Hosts sind weiterhin im Container lesbar (Namen der Admin-Accounts sichtbar). Ein gefilterter Auszug wäre möglich.
 - `ssh host befehl` / scp: `SSH_ORIGINAL_COMMAND` wird von sudo (`env_reset`) vermutlich verworfen.
+
+## Tests und Pipeline
+`.github/workflows/ci.yml` läuft bei jedem Push und Pull Request:
+
+- **Lint**: yamllint (`.yamllint`), shellcheck, hadolint für das Dockerfile, ansible-lint (`.ansible-lint`, zunächst nicht blockierend)
+- **Syntax**: `ansible-playbook --syntax-check` für alle Playbooks
+- **Jail-Integrationstest** (`tests/jail-test.yml`): baut das echte Jail-Image, legt einen Test-Account an und startet über `containerize.sh` echte Container - genau wie beim SSH-Login. Geprüft wird u.a.: richtiger User, Gruppen `jailed users`, sudo funktioniert, **keine Passwort-Hashes** in `/etc/shadow` im Container, `mknod` verboten (Capabilities), kein Default-Route (internes Netz), Prozesslimit, Read-only-Mounts, Login-Nachricht. Danach wird `containerize.sh` mit shellcheck geprüft.
+
+Lokal auf einem Test-Server (nicht während eines Workshops!):
+```sh
+ansible-playbook -i localhost, -c local tests/jail-test.yml
+```
+
+Nicht automatisch getestet: nginx, wetty und die sshd-Konfiguration (brauchen einen vollständigen Server).
+
+## Login-Nachricht
+Bei jedem interaktiven Login zeigt `containerize.sh` die Nachricht aus `/etc/workshop-motd` an (Template `roles/docker-jail/templates/workshop-motd.j2`, `@USER@` wird durch den Login-Namen ersetzt). Abschalten mit `jail_motd_template: ""`.
 
 ## Docker
 After the login of your students, you can execute `ansible-playbook docker-ping.yml` in order verifiy the running docker container.
