@@ -1,10 +1,29 @@
 ---
+# Selbstsigniertes Zertifikat für nginx (webtty_tls: selfsigned).
+# Enthält die IP-Adresse bzw. den Namen des Servers, damit der Browser nach
+# dem einmaligen Akzeptieren nicht zusätzlich über einen falschen Namen
+# meckert.
+
 - name: Create private key (RSA, 4096 bits)
   community.crypto.openssl_privatekey:
     path: /etc/ssl/private/ca_certificate.key
+    mode: '0600'
+
+- name: Create certificate signing request
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: /etc/ssl/private/ca_certificate.key
+    common_name: "{{ webtty_public_address }}"
+    subject_alt_name: >-
+      {{ ['IP:' ~ webtty_public_address]
+         if webtty_public_address is match('^[0-9.]+$') or ':' in webtty_public_address
+         else ['DNS:' ~ webtty_public_address] }}
+  register: webtty_csr
+  changed_when: false
 
 - name: Create simple self-signed certificate
   community.crypto.x509_certificate:
     path: /etc/ssl/certs/certificate.pem
     privatekey_path: /etc/ssl/private/ca_certificate.key
+    csr_content: "{{ webtty_csr.csr }}"
     provider: selfsigned
+    selfsigned_not_after: "+30d"

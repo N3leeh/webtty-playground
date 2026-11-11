@@ -1,0 +1,22 @@
+---
+# file: service.yml
+
+- name: Get infos on network
+  docker_network_info:
+    name: bridge
+  register: docker_bridge
+
+- name: Create Webtty systemd service file
+  ansible.builtin.template:
+    src: templates/webtty.service.j2
+    dest: /etc/systemd/system/webtty.service
+    mode: '0644'
+  register: webtty_unit
+
+- name: Enable Webtty unit
+  ansible.builtin.systemd_service:
+    name: webtty
+    # bei geänderter Unit-Datei (z.B. neues Image) neu starten
+    state: "{{ 'restarted' if webtty_unit is changed else 'started' }}"
+    enabled: true
+    daemon_reload: true

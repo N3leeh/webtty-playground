@@ -1,0 +1,22 @@
+---
+# file: auth.yml
+# Optional: gemeinsames Workshop-Passwort vor der Login-Seite (vars/nginx.yml)
+- name: Basic-Auth-Datei für nginx (webtty_basic_auth)
+  ansible.builtin.copy:
+    # Nicht unter /etc/nginx: nginx wird erst nach dieser Rolle installiert
+    dest: /etc/webtty.htpasswd
+    content: >-
+      {{ webtty_basic_auth_user }}:{{ lookup('ansible.builtin.password',
+      webtty_credentials_dir ~ '/web-zugang', length=10,
+      chars=['ascii_letters', 'digits'], encrypt='sha512_crypt') }}
+    owner: root
+    group: root
+    mode: '0644'
+  when: webtty_basic_auth | default(false) | bool
+  no_log: true
+
+- name: Keine Basic-Auth-Datei, wenn webtty_basic_auth aus ist
+  ansible.builtin.file:
+    path: /etc/webtty.htpasswd
+    state: absent
+  when: not (webtty_basic_auth | default(false) | bool)

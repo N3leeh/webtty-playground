@@ -1,0 +1,6 @@
+---
+# Adresse, unter der der Server im Browser aufgerufen wird. Kommt als
+# Common Name und Subject Alternative Name ins Zertifikat.
+# Standard: IPv4-Adresse der Standard-Netzwerkkarte (bei Hetzner & Co. die
+# öffentliche IP).
+webtty_public_address: "{{ ansible_default_ipv4.address | default(ansible_fqdn) }}"

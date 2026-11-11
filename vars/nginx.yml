@@ -1,57 +1,88 @@
 ---
 # file: nginx.yml
+#
+# Zugriff über den Browser mit der IP-Adresse des Servers, z.B. http://203.0.113.10
+# (nginx nimmt die Anfrage an und leitet sie an wetty weiter, wetty meldet
+# sich per SSH am Server an).
 
-# Debian-Default-Site (Port 80, default_server) entfernen, sie würde sonst
-# alle Anfragen per IP-Adresse beantworten.
-nginx_remove_default_vhost: true
+# "selfsigned": http://<IP> leitet auf https://<IP> um. Selbstsigniertes
+#               Zertifikat für die IP - der Browser warnt beim ersten Aufruf
+#               einmal ("Risiko akzeptieren"), danach ist die Verbindung
+#               verschlüsselt. Empfohlen.
+# "none":       Nur http://<IP>, ohne Verschlüsselung. Einfacher (keine
+#               Browser-Warnung), aber Passwörter gehen im Klartext über das
+#               Internet.
+webtty_tls: "selfsigned"
 
-# Optional: Zugriff auf die WebShell nur aus bestimmten Netzen erlauben,
-# z.B. dem Uni-/Schulnetz. Leer = keine Einschränkung.
+# Optional: zusätzliches gemeinsames Workshop-Passwort VOR der Login-Seite
+# (Browser-Anmeldedialog). Hält Scanner und Neugierige aus dem Internet von
+# der Login-Seite fern. Benutzer: webtty_basic_auth_user, Passwort wird
+# zufällig erzeugt und liegt in credentials/web-zugang (erste Spalte).
+webtty_basic_auth: false
+webtty_basic_auth_user: "workshop"
+
+# Optional: Zugriff nur aus bestimmten Netzen erlauben, z.B. dem Uni-Netz.
+# Leer = keine Einschränkung.
 #   webtty_allowed_networks: ["192.0.2.0/24", "2001:db8::/32"]
 webtty_allowed_networks: []
 
-nginx_vhosts:
-  # Port 80 leitet nur noch auf HTTPS um
-  - listen: "80"
-    server_name: "{{ ansible_fqdn }}"
-    state: "present"
-    filename: "{{ ansible_fqdn }}.80.conf"
-    extra_parameters: |
-      return 301 https://$host$request_uri;
+# Debian-Default-Site entfernen ("Welcome to nginx" auf Port 80)
+nginx_remove_default_vhost: true
 
-  - listen: "443 ssl http2"
-    server_name: "{{ ansible_fqdn }}"
-    # server_name_redirect: "www.example.com"
-    root: "/var/www"
-    # index: "index.php index.html index.htm"
-    access_log: "nginx-access.log"
-    error_log: "nginx-error.log"
-    state: "present"
-    template: "{{ nginx_vhost_template }}"
-    filename: "{{ ansible_fqdn }}.443.conf"
-    extra_parameters: |
-      location ^~ / {
-      {% for net in webtty_allowed_networks %}
-        allow {{ net }};
-      {% endfor %}
-      {% if webtty_allowed_networks | length > 0 %}
-        deny all;
-      {% endif %}
-        proxy_pass http://{{ docker_bridge.network.IPAM.Config[0].Gateway }}:3000/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        # 12 Stunden (Sekunden). Vorher 43200000 s = ca. 500 Tage.
-        proxy_read_timeout 43200;
+# --- ab hier normalerweise nichts ändern --------------------------------------
 
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header Host $http_host;
-        proxy_set_header X-NginX-Proxy true;
-      }
-      ssl_certificate     /etc/ssl/certs/certificate.pem;
-      ssl_certificate_key /etc/ssl/private/ca_certificate.key;
-      ssl_protocols       TLSv1.2 TLSv1.3;
-      ssl_ciphers         HIGH:!aNULL:!MD5;
-      add_header X-Content-Type-Options nosniff always;
-      add_header Referrer-Policy no-referrer always;
+webtty_proxy_location: |
+  location / {
+  {% if webtty_basic_auth | bool %}
+    auth_basic "Linux-Workshop";
+    auth_basic_user_file /etc/webtty.htpasswd;
+  {% endif %}
+  {% for net in webtty_allowed_networks %}
+    allow {{ net }};
+  {% endfor %}
+  {% if webtty_allowed_networks | length > 0 %}
+    deny all;
+  {% endif %}
+    proxy_pass http://{{ docker_bridge.network.IPAM.Config[0].Gateway }}:3000/;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    # offene Terminal-Sitzungen bis zu 12 Stunden
+    proxy_read_timeout 43200;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Host $http_host;
+  }
+  add_header X-Content-Type-Options nosniff always;
+  add_header Referrer-Policy no-referrer always;
+
+webtty_vhost_redirect:
+  listen: "80 default_server"
+  server_name: "_"
+  filename: "webtty.80.conf"
+  state: "present"
+  extra_parameters: |
+    return 301 https://$host$request_uri;
+
+webtty_vhost_http:
+  listen: "80 default_server"
+  server_name: "_"
+  filename: "webtty.80.conf"
+  state: "present"
+  extra_parameters: "{{ webtty_proxy_location }}"
+
+webtty_vhost_https:
+  listen: "443 ssl default_server"
+  server_name: "_"
+  filename: "webtty.443.conf"
+  state: "{{ 'present' if webtty_tls == 'selfsigned' else 'absent' }}"
+  extra_parameters: |
+    {{ webtty_proxy_location }}
+    ssl_certificate     /etc/ssl/certs/certificate.pem;
+    ssl_certificate_key /etc/ssl/private/ca_certificate.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+nginx_vhosts: >-
+  {{ [webtty_vhost_redirect if webtty_tls == 'selfsigned' else webtty_vhost_http,
+      webtty_vhost_https] }}

@@ -4,3 +4,6 @@
 # oder per Digest "@sha256:..."), damit nicht bei jedem Neustart des Dienstes
 # ungeprüft eine neue Version gezogen wird.
 webtty_image: "wettyoss/wetty:latest"
+
+# Ablage für das zufällige Passwort der optionalen Basic-Auth (webtty_basic_auth)
+webtty_credentials_dir: "{{ playbook_dir }}/credentials"
