@@ -1,5 +1,20 @@
 ---
 # file: main.yml
+#
+# Die Teilaufgaben sind getrennt, damit sie einzeln getestet werden können
+# (z.B. in der CI: include_role mit tasks_from: users / jail).
 
-- ansible.builtin.include_tasks: docker-shell.yml
-- ansible.builtin.include_tasks: hardening-ssh.yml
+- name: Workshop-Accounts anlegen
+  ansible.builtin.include_tasks: users.yml
+
+- name: Jail-Image bauen
+  ansible.builtin.include_tasks: image.yml
+
+- name: Jail (Netz, containerize.sh, Login-Nachricht, sudo-Regel)
+  ansible.builtin.include_tasks: jail.yml
+
+- name: SSH für die Gruppe jailed auf containerize.sh zwingen
+  ansible.builtin.include_tasks: sshd-jail.yml
+
+- name: SSH härten
+  ansible.builtin.include_tasks: hardening-ssh.yml

@@ -1,0 +1,12 @@
+---
+# file: image.yml
+
+- name: Build jailed container
+  community.docker.docker_image:
+    build:
+      path: "{{ role_path }}/files/"
+    debug: true
+    name: debian-jail
+    tag: latest
+    source: build
+    force_tag: true

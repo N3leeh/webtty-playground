@@ -1,0 +1,51 @@
+---
+# file: jail.yml
+
+- name: Ensure docker network for jail containers exists
+  community.docker.docker_network:
+    name: "{{ jail_network }}"
+    internal: "{{ jail_network_internal | bool }}"
+    driver_options:
+      # Container dürfen sich nicht gegenseitig erreichen
+      com.docker.network.bridge.enable_icc: "false"
+    state: present
+  when: jail_network | length > 0
+
+- name: Create /usr/local/containerize.sh from template
+  ansible.builtin.template:
+    src: containerize.sh.j2
+    dest: /usr/local/containerize.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy files/wsadm to /usr/local/bin/
+  ansible.builtin.copy:
+    src: files/wsadm
+    dest: /usr/local/bin/wsadm
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Ensure sudo is installed
+  ansible.builtin.package:
+    name: sudo
+    state: present
+
+- name: Allow password-less sudo on /usr/local/containerize.sh for jailed users
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/workshop-jail
+    content: |
+      # Managed by Ansible (webtty-playground)
+      %jailed ALL=(root) NOPASSWD: /usr/local/containerize.sh
+    owner: root
+    group: root
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+- name: Remove old sudo rule from /etc/sudoers (now in /etc/sudoers.d/workshop-jail)
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers
+    state: absent
+    line: '%jailed ALL=(ALL) NOPASSWD: /usr/local/containerize.sh'
+    validate: 'visudo -cf %s'

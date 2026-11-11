@@ -1,0 +1,48 @@
+---
+# file: users.yml
+
+- name: Ensure jailed group exits
+  ansible.builtin.group:
+    name: jailed
+    state: present
+
+- name: Ensure jailed users exists
+  ansible.builtin.user:
+    name: "{{ item }}"
+    group: "jailed"
+    state: present
+    shell: "/bin/bash"
+    # Ablauf nach jail_account_lifetime_hours (Default 48h), tagesgenau
+    expires: "{{ (ansible_date_time.epoch | int) + (jail_account_lifetime_hours | int * 3600) }}"
+    # Standard: Zufallspasswort pro User, Klartext liegt auf dem Controller in
+    # jail_credentials_dir/<user> (erste Spalte). Der Salt wird dort ebenfalls
+    # gespeichert, dadurch bleibt der Hash bei jedem Lauf gleich (idempotent).
+    # Legacy: initial_password_suffix gesetzt -> "<user><suffix>".
+    password: >-
+      {{
+        (item + initial_password_suffix) | password_hash('sha512', (item | hash('sha256'))[:16])
+        if (initial_password_suffix | length > 0) else
+        lookup('ansible.builtin.password', jail_credentials_dir ~ '/' ~ item,
+               length=jail_password_length, chars=['ascii_letters', 'digits'],
+               encrypt='sha512_crypt')
+      }}
+  with_items: "{{ ssh_jailed_users }}"
+  when: (ssh_jailed_users|length>0)
+  no_log: true
+
+# Primärgruppe ist jailed (siehe oben). Zusätzlich die Gruppe "users":
+# Im Jail-Image erlaubt /etc/sudoers.d/workshop "%users ALL=(ALL) NOPASSWD:ALL"
+# und die Aufgabendateien der Schnitzeljagd gehören der Gruppe users.
+# Ohne diese Gruppe funktioniert sudo im Container nicht (Aufgaben 14, 15, 21).
+- name: "Users should belong to jailed and users group"
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "{{ ['jailed'] + jail_user_extra_groups }}"
+    append: true
+  with_items: "{{ ssh_jailed_users }}"
+  when: (ssh_jailed_users|length>0)
+
+- name: Ensure all jailed users belong to unprivileged groups
+  ansible.builtin.include_tasks: remove-groups.yml
+  with_items: "{{ ssh_jailed_users }}"
+  when: (ssh_jailed_users|length>0)

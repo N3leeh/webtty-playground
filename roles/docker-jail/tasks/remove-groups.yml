@@ -1,16 +1,19 @@
 ---
 # file: remove-groups.yml
+#
+# Entfernt Teilnehmende aus privilegierten Gruppen. Vorher wurde das Ergebnis
+# von ansible.builtin.user ausgewertet; dieses enthält aber kein Feld
+# "groups", wenn groups nicht gesetzt ist - die Prüfung griff daher nie.
 
-- name: Lookup user data
-  ansible.builtin.user:
-    name: "{{ item }}"
-    state: present
-  register: user_data
+- name: Lookup groups of {{ item }}
+  ansible.builtin.command: "id -nG {{ item }}"
+  register: user_groups
+  changed_when: false
+  check_mode: false
 
-- name: remove user from docker group - {{ item }}
-  ansible.builtin.command: "gpasswd -d {{ item }} docker"
-  when: user_data.groups is defined and 'docker' in user_data.groups
-
-- name: remove user from sudo group - {{ item }}
-  ansible.builtin.command: "gpasswd -d {{ item }} sudo"
-  when: user_data.groups is defined and 'sudo' in user_data.groups
+- name: Remove {{ item }} from privileged groups
+  ansible.builtin.command: "gpasswd -d {{ item }} {{ privileged_group }}"
+  loop: "{{ jail_privileged_groups }}"
+  loop_control:
+    loop_var: privileged_group
+  when: privileged_group in user_groups.stdout.split()

@@ -34,7 +34,15 @@ containerize()
 
     write_shadow
 
-    # shellcheck disable=SC2086 # $1 (-it/-i) und SSH_ORIGINAL_COMMAND sollen gesplittet werden
+    # Zusatzgruppen explizit mitgeben: Docker übernimmt bei "--user uid:gid"
+    # KEINE Zusatzgruppen aus /etc/group. Ohne "users" funktioniert sudo im
+    # Container nicht (%users in /etc/sudoers.d/workshop).
+    _GROUP_ADD=""
+    for _gid in $(id -G "$_USER_NAME"); do
+        _GROUP_ADD="$_GROUP_ADD --group-add $_gid"
+    done
+
+    # shellcheck disable=SC2086,SC2046 # $1, $_GROUP_ADD, Extra-Mounts und SSH_ORIGINAL_COMMAND sollen gesplittet werden
     exec docker run --rm $1 \
                --label purpose=jail \
 {% if jail_network | length > 0 %}
@@ -67,6 +75,7 @@ containerize()
                --hostname "$(hostname)" \
                --name "$_USER_NAME-$(date "+%H%M%S")-$$" \
                --user "$(id -u "$SUDO_UID"):$(id -g "$SUDO_UID")" \
+               $_GROUP_ADD \
                {{ jail_image | quote }} ${SSH_ORIGINAL_COMMAND:-}
 }
 

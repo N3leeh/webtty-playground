@@ -1,0 +1,20 @@
+---
+# file: sshd-jail.yml
+
+- name: Insert/Update Match Group in /etc/ssh/sshd_config
+  ansible.builtin.blockinfile:
+    path: /etc/ssh/sshd_config
+    insertafter: EOF
+    block: |
+      Match Group jailed
+            ForceCommand sudo /usr/local/containerize.sh
+            DisableForwarding yes
+            AllowTcpForwarding no
+            AllowAgentForwarding no
+            AllowStreamLocalForwarding no
+            PermitTunnel no
+            X11Forwarding no
+            PermitUserRC no
+      Match All
+    validate: '/usr/sbin/sshd -t -f %s'
+  notify: restart sshd

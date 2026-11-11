@@ -18,6 +18,14 @@ initial_password_suffix: ""
 # Hinweis: /etc/shadow speichert das Ablaufdatum tagesgenau.
 jail_account_lifetime_hours: 48
 
+# Zusätzliche Gruppen der Teilnehmenden (Primärgruppe ist jailed).
+# "users" wird im Jail-Image für sudo (%users) und für die Dateien der
+# Schnitzeljagd gebraucht.
+jail_user_extra_groups: ['users']
+
+# Aus diesen Gruppen werden Teilnehmende entfernt (Root-Zugriff auf den Host)
+jail_privileged_groups: ['docker', 'sudo', 'wheel', 'adm', 'lxd']
+
 # --- Container --------------------------------------------------------------
 jail_image: "debian-jail:latest"
 
