@@ -26,6 +26,11 @@ jail_user_extra_groups: ['users']
 # Aus diesen Gruppen werden Teilnehmende entfernt (Root-Zugriff auf den Host)
 jail_privileged_groups: ['docker', 'sudo', 'wheel', 'adm', 'lxd']
 
+# --- Login-Nachricht ----------------------------------------------------------
+# Wird bei jedem interaktiven Login vor dem Start des Containers angezeigt.
+# "@USER@" wird durch den Login-Namen ersetzt. "" = keine Nachricht.
+jail_motd_template: "workshop-motd.j2"
+
 # --- Container --------------------------------------------------------------
 jail_image: "debian-jail:latest"
 

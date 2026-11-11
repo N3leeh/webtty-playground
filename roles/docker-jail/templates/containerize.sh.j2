@@ -88,6 +88,10 @@ fi
 
 # Check if TTY allocated
 if tty -s; then
+    # Login-Nachricht (nur bei interaktivem Login, nicht bei scp/ssh befehl)
+    if [ -r /etc/workshop-motd ]; then
+        sed "s/@USER@/$(id -un "$SUDO_UID")/g" /etc/workshop-motd
+    fi
     containerize -it
 else
     containerize -i

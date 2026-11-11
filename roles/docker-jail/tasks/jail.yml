@@ -11,6 +11,21 @@
     state: present
   when: jail_network | length > 0
 
+- name: Login-Nachricht für die Teilnehmenden
+  ansible.builtin.template:
+    src: "{{ jail_motd_template }}"
+    dest: /etc/workshop-motd
+    owner: root
+    group: root
+    mode: '0644'
+  when: jail_motd_template | length > 0
+
+- name: Keine Login-Nachricht, wenn jail_motd_template leer ist
+  ansible.builtin.file:
+    path: /etc/workshop-motd
+    state: absent
+  when: jail_motd_template | length == 0
+
 - name: Create /usr/local/containerize.sh from template
   ansible.builtin.template:
     src: containerize.sh.j2
