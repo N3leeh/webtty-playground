@@ -1,20 +1,64 @@
 ---
 # file: sshd-jail.yml
+#
+# SSH für die Teilnehmenden: Login per Passwort nur über wetty (Docker-Netz),
+# danach zwingend in den Jail-Container (ForceCommand).
+# Alle Einstellungen stehen in EINER Datei /etc/ssh/sshd_config.d/10-workshop.conf
+# (Template sshd-workshop.conf.j2) statt verstreut in /etc/ssh/sshd_config.
 
-- name: Insert/Update Match Group in /etc/ssh/sshd_config
+- name: Docker-Netz von wetty ermitteln (Standard-Bridge)
+  community.docker.docker_network_info:
+    name: bridge
+  register: jail_docker_bridge
+  when: jail_wetty_subnet_override | length == 0
+
+- name: Subnetz für den Passwort-Login merken
+  ansible.builtin.set_fact:
+    jail_wetty_subnet: >-
+      {{ jail_wetty_subnet_override if jail_wetty_subnet_override | length > 0
+         else jail_docker_bridge.network.IPAM.Config[0].Subnet }}
+
+- name: sshd_config liest /etc/ssh/sshd_config.d/ ein
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "Include /etc/ssh/sshd_config.d/*.conf"
+    insertbefore: BOF
+    validate: '/usr/sbin/sshd -t -f %s'
+  notify: restart sshd
+
+- name: Ordner /etc/ssh/sshd_config.d
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    mode: '0755'
+
+- name: Login-Banner
+  ansible.builtin.copy:
+    src: files/issue.net
+    dest: /etc/issue.net
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Workshop-Konfiguration für sshd
+  ansible.builtin.template:
+    src: sshd-workshop.conf.j2
+    dest: /etc/ssh/sshd_config.d/10-workshop.conf
+    owner: root
+    group: root
+    mode: '0644'
+    # Prüft die GESAMTE sshd-Konfiguration mit der neuen Datei (als
+    # 00-Datei, damit sie vor einer evtl. alten Version gelesen wird).
+    validate: >-
+      /bin/sh -c 'cp %s /etc/ssh/sshd_config.d/00-workshop-validate.conf;
+      /usr/sbin/sshd -t; rc=$?;
+      rm -f /etc/ssh/sshd_config.d/00-workshop-validate.conf; exit $rc'
+  notify: restart sshd
+
+# Aufräumen alter Versionen dieses Playbooks (Match-Block direkt in sshd_config)
+- name: Alten Match-Block aus /etc/ssh/sshd_config entfernen
   ansible.builtin.blockinfile:
     path: /etc/ssh/sshd_config
-    insertafter: EOF
-    block: |
-      Match Group jailed
-            ForceCommand sudo /usr/local/containerize.sh
-            DisableForwarding yes
-            AllowTcpForwarding no
-            AllowAgentForwarding no
-            AllowStreamLocalForwarding no
-            PermitTunnel no
-            X11Forwarding no
-            PermitUserRC no
-      Match All
+    state: absent
     validate: '/usr/sbin/sshd -t -f %s'
   notify: restart sshd

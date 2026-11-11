@@ -1,0 +1,36 @@
+# {{ ansible_managed }}
+#
+# SSH-Einstellungen für den Workshop (webtty-playground).
+# Liegt in /etc/ssh/sshd_config.d/ und wird über "Include" ganz am Anfang der
+# sshd_config gelesen. Bei sshd gilt der ERSTE gefundene Wert - deshalb heißt
+# die Datei "10-..." und kommt vor z.B. 50-cloud-init.conf (Hetzner & Co.).
+
+# --- Allgemein (alle Benutzer) ---------------------------------------------
+MaxAuthTries 6
+MaxSessions 10
+LoginGraceTime 1m
+X11Forwarding no
+Banner /etc/issue.net
+
+# --- Teilnehmende (Gruppe jailed) ------------------------------------------
+# Login per Passwort NUR aus dem Docker-Netz, in dem wetty läuft
+# ({{ jail_wetty_subnet }}). So funktioniert der Login über den Browser,
+# auch wenn der Anbieter Passwort-Logins global abschaltet (cloud-init).
+Match Group jailed Address {{ jail_wetty_subnet }}
+    PasswordAuthentication yes
+    KbdInteractiveAuthentication no
+    ForceCommand sudo /usr/local/containerize.sh
+    DisableForwarding yes
+    PermitTunnel no
+    PermitUserRC no
+
+# Von überall sonst (direkt über Port 22 aus dem Internet): kein Passwort.
+# Teilnehmende haben keine SSH-Keys - damit ist ein Login von außen und
+# Passwort-Raten gegen ihre Accounts nicht möglich.
+Match Group jailed
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+    ForceCommand sudo /usr/local/containerize.sh
+    DisableForwarding yes
+    PermitTunnel no
+    PermitUserRC no

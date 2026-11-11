@@ -13,8 +13,5 @@
 - name: Jail (Netz, containerize.sh, Login-Nachricht, sudo-Regel)
   ansible.builtin.include_tasks: jail.yml
 
-- name: SSH für die Gruppe jailed auf containerize.sh zwingen
+- name: SSH (Passwort-Login nur über wetty, Jail, Härtung)
   ansible.builtin.include_tasks: sshd-jail.yml
-
-- name: SSH härten
-  ansible.builtin.include_tasks: hardening-ssh.yml

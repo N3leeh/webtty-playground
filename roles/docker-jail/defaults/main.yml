@@ -31,6 +31,12 @@ jail_privileged_groups: ['docker', 'sudo', 'wheel', 'adm', 'lxd']
 # "@USER@" wird durch den Login-Namen ersetzt. "" = keine Nachricht.
 jail_motd_template: "workshop-motd.j2"
 
+# --- SSH ----------------------------------------------------------------------
+# Teilnehmende dürfen sich nur aus diesem Netz per Passwort anmelden (dort
+# läuft wetty). "" = automatisch das Subnetz der Docker-Standard-Bridge
+# (meist 172.17.0.0/16). Von überall sonst ist für sie kein Login möglich.
+jail_wetty_subnet_override: ""
+
 # --- Container --------------------------------------------------------------
 jail_image: "debian-jail:latest"
 
