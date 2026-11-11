@@ -37,6 +37,10 @@ jail_motd_template: "workshop-motd.j2"
 # (meist 172.17.0.0/16). Von überall sonst ist für sie kein Login möglich.
 jail_wetty_subnet_override: ""
 
+# Maximale Anzahl gleichzeitiger Sitzungen (Container) pro Person, damit
+# niemand mit vielen Browser-Tabs den Server für alle belegt. 0 = unbegrenzt.
+jail_max_sessions_per_user: 3
+
 # --- Container --------------------------------------------------------------
 jail_image: "debian-jail:latest"
 

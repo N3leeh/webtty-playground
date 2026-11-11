@@ -32,6 +32,17 @@ containerize()
     _USER_NAME="$(id -un "$SUDO_UID")"
     _USER_HOME="$(getent passwd "$_USER_NAME" | cut -d: -f6)"
 
+{% if jail_max_sessions_per_user | int > 0 %}
+    # Höchstens {{ jail_max_sessions_per_user | int }} gleichzeitige Sitzungen pro Person
+    _SESSIONS=$(docker ps -q --filter label=purpose=jail --filter "label=jail.user=$_USER_NAME" | wc -l)
+    if [ "$_SESSIONS" -ge {{ jail_max_sessions_per_user | int }} ]; then
+        echo "Du hast bereits $_SESSIONS Sitzungen offen (maximal {{ jail_max_sessions_per_user | int }})."
+        echo "Bitte schließe zuerst ein anderes Fenster oder einen anderen Tab."
+        sleep 5
+        exit 1
+    fi
+
+{% endif %}
     write_shadow
 
     # Zusatzgruppen explizit mitgeben: Docker übernimmt bei "--user uid:gid"
@@ -45,6 +56,7 @@ containerize()
     # shellcheck disable=SC2086,SC2046 # $1, $_GROUP_ADD, Extra-Mounts und SSH_ORIGINAL_COMMAND sollen gesplittet werden
     exec docker run --rm $1 \
                --label purpose=jail \
+               --label "jail.user=$_USER_NAME" \
 {% if jail_network | length > 0 %}
                --network {{ jail_network | quote }} \
 {% endif %}
