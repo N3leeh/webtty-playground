@@ -52,6 +52,16 @@ webtty_proxy_location: |
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header Host $http_host;
+    # wetty prüft bei JEDER Anfrage den Origin-Header. Browser schicken ihn bei
+    # gewöhnlichen GET-Anfragen auf dieselbe Seite aber nicht mit (socket.io
+    # startet so) -> "origin not allowed", keine Login-Abfrage. Fehlt der Header,
+    # setzen wir ihn auf die aufgerufene Adresse. Ein mitgeschickter Origin
+    # (z.B. von einer fremden Seite) bleibt unverändert und wird weiter geprüft.
+    set $webtty_origin $http_origin;
+    if ($webtty_origin = "") {
+      set $webtty_origin "$scheme://$host";
+    }
+    proxy_set_header Origin $webtty_origin;
   }
   add_header X-Content-Type-Options nosniff always;
   add_header Referrer-Policy no-referrer always;
