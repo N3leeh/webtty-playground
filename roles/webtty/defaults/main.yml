@@ -7,3 +7,11 @@ webtty_image: "wettyoss/wetty:latest"
 
 # Ablage für das zufällige Passwort der optionalen Basic-Auth (webtty_basic_auth)
 webtty_credentials_dir: "{{ playbook_dir }}/credentials"
+
+# Adressen, unter denen die Teilnehmenden wetty im Browser aufrufen.
+# Neuere wetty-Versionen starten nur, wenn mindestens eine angegeben ist
+# ("configure at least one allowed origin"). Leer = automatisch:
+# http:// und https:// mit der öffentlichen IPv4 (und ggf. IPv6) des Servers.
+# Bei einem DNS-Namen zusätzlich eintragen, z.B.:
+#   webtty_allowed_origins: ["https://workshop.example.org", "http://workshop.example.org"]
+webtty_allowed_origins: []

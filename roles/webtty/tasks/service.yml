@@ -15,6 +15,20 @@
           | select('match', '^[0-9.]+$')
           | first) | default('172.17.0.1') }}
 
+- name: Erlaubte Origins für wetty festlegen (Adresse im Browser)
+  ansible.builtin.set_fact:
+    webtty_origins: >-
+      {{ webtty_allowed_origins if webtty_allowed_origins | length > 0 else
+         (['http://' + ansible_default_ipv4.address, 'https://' + ansible_default_ipv4.address]
+          if ansible_default_ipv4.address is defined else [])
+         + (['http://[' + ansible_default_ipv6.address + ']', 'https://[' + ansible_default_ipv6.address + ']']
+            if ansible_default_ipv6.address is defined else []) }}
+
+- name: Ohne Origin startet wetty nicht
+  ansible.builtin.assert:
+    that: webtty_origins | length > 0
+    fail_msg: "Keine öffentliche IP gefunden - bitte webtty_allowed_origins in roles/webtty/defaults/main.yml setzen."
+
 - name: wetty-Image beim Ausrollen ziehen (nicht erst beim Dienststart)
   community.docker.docker_image:
     name: "{{ webtty_image }}"
