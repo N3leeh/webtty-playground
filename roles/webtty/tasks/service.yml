@@ -15,14 +15,37 @@
           | select('match', '^[0-9.]+$')
           | first) | default('172.17.0.1') }}
 
-- name: Erlaubte Origins für wetty festlegen (Adresse im Browser)
+- name: Öffentliche IPv4 ermitteln (hinter NAT/Floating-IP weicht sie von der lokalen ab)
+  ansible.builtin.uri:
+    url: https://api.ipify.org
+    return_content: true
+  register: webtty_public_ip
+  failed_when: false
+  when: webtty_allowed_origins | length == 0
+
+- name: Erlaubte Origins für wetty festlegen (Adresse, die im Browser steht)
+  vars:
+    _ips: >-
+      {{ (ansible_all_ipv4_addresses | default([])
+          | reject('match', '^(127\\.|172\\.1[6-9]\\.|172\\.2[0-9]\\.|172\\.3[01]\\.)')
+          | list)
+         + ([webtty_public_ip.content | trim]
+            if (webtty_public_ip.status | default(0)) == 200
+               and (webtty_public_ip.content | default('') | trim) is match('^[0-9.]+$')
+            else []) }}
+    _ip6: >-
+      {{ ['[' + ansible_default_ipv6.address + ']']
+         if ansible_default_ipv6.address is defined else [] }}
+    _hosts: "{{ (_ips + _ip6) | unique }}"
   ansible.builtin.set_fact:
     webtty_origins: >-
       {{ webtty_allowed_origins if webtty_allowed_origins | length > 0 else
-         (['http://' + ansible_default_ipv4.address, 'https://' + ansible_default_ipv4.address]
-          if ansible_default_ipv4.address is defined else [])
-         + (['http://[' + ansible_default_ipv6.address + ']', 'https://[' + ansible_default_ipv6.address + ']']
-            if ansible_default_ipv6.address is defined else []) }}
+         (_hosts | map('regex_replace', '^', 'https://') | list)
+         + (_hosts | map('regex_replace', '^', 'http://') | list) }}
+
+- name: Diese Adressen sind für wetty freigegeben
+  ansible.builtin.debug:
+    var: webtty_origins
 
 - name: Ohne Origin startet wetty nicht
   ansible.builtin.assert:
