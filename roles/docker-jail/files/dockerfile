@@ -20,14 +20,17 @@ RUN apt-get update && apt-get install -y \
     locales-all \
     && rm -rf /var/lib/apt/lists/*
 
-# "Set disable_coredump false" unterdrückt die Warnung
-# "sudo: setrlimit(RLIMIT_CORE): Operation not permitted", die erscheint,
-# wenn der Container ohne CAP_SYS_RESOURCE läuft (siehe jail_capabilities).
-RUN printf '%s\n' \
-        '%users ALL=(ALL) NOPASSWD:ALL' \
-        'Set disable_coredump false' \
-        > /etc/sudoers.d/workshop \
-    && chmod 0440 /etc/sudoers.d/workshop
+# sudo ohne Passwort für die Teilnehmenden (Gruppe users).
+# Die Datei wird beim Bauen mit visudo geprüft - ein Syntaxfehler bricht den
+# Build ab, statt erst beim "sudo" der Teilnehmenden aufzufallen.
+RUN printf '%s\n' '%users ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/workshop \
+    && chmod 0440 /etc/sudoers.d/workshop \
+    && visudo -cf /etc/sudoers.d/workshop
+
+# Unterdrückt die Warnung "sudo: setrlimit(RLIMIT_CORE): Operation not
+# permitted" (Container ohne CAP_SYS_RESOURCE, siehe jail_capabilities).
+# Gehört in /etc/sudo.conf, NICHT in eine sudoers-Datei.
+RUN echo 'Set disable_coredump false' >> /etc/sudo.conf
 
 ENV LANG=de_DE.UTF-8
 

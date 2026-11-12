@@ -62,6 +62,8 @@
         echo "GROUPS=$(id -Gn)"
         test -f /.dockerenv && echo "IN_CONTAINER=yes"
         sudo -n true && echo "SUDO=ok"
+        # sudo darf nichts melden (Syntaxfehler in sudoers, setrlimit-Warnung ...)
+        sudo_msg=$(sudo -n -i true 2>&1); [ -z "$sudo_msg" ] && echo "SUDO_QUIET=yes" || echo "SUDO_QUIET=no: $sudo_msg"
         # Anzahl Einträge und Anzahl echter Hashes ($...) in /etc/shadow
         echo "SHADOW_ENTRIES=$(sudo -n cat /etc/shadow | grep -c .)"
         echo "SHADOW_HASHES=$(sudo -n cut -d: -f2 /etc/shadow | grep -c '^\$')"
@@ -86,6 +88,7 @@
           - "'USER=jailtest' in session.stdout_lines"
           - "'IN_CONTAINER=yes' in session.stdout_lines"
           - "'SUDO=ok' in session.stdout_lines"
+          - "'SUDO_QUIET=yes' in session.stdout_lines"
           - "'SHADOW_HASHES=0' in session.stdout_lines"
           - "session.stdout_lines | select('match', '^SHADOW_ENTRIES=[1-9]') | list | length == 1"
           - "session.stdout_lines | select('search', '^GROUPS=(.* )?users( |$)') | list | length == 1"
