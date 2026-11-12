@@ -2,9 +2,24 @@
 # file: service.yml
 
 - name: Get infos on network
-  docker_network_info:
+  community.docker.docker_network_info:
     name: bridge
   register: docker_bridge
+
+- name: Gateway-IP der Docker-Bridge bestimmen (dort lauscht wetty, dort lauscht sshd)
+  ansible.builtin.set_fact:
+    webtty_bind_ip: >-
+      {{ (docker_bridge.network.IPAM.Config
+          | selectattr('Gateway', 'defined')
+          | map(attribute='Gateway')
+          | select('match', '^[0-9.]+$')
+          | first) | default('172.17.0.1') }}
+
+- name: wetty-Image beim Ausrollen ziehen (nicht erst beim Dienststart)
+  community.docker.docker_image:
+    name: "{{ webtty_image }}"
+    source: pull
+  register: webtty_image_pull
 
 - name: Create Webtty systemd service file
   ansible.builtin.template:
@@ -16,7 +31,16 @@
 - name: Enable Webtty unit
   ansible.builtin.systemd_service:
     name: webtty
-    # bei geänderter Unit-Datei (z.B. neues Image) neu starten
-    state: "{{ 'restarted' if webtty_unit is changed else 'started' }}"
+    # bei geänderter Unit-Datei oder neuem Image neu starten
+    state: "{{ 'restarted' if (webtty_unit is changed or webtty_image_pull is changed) else 'started' }}"
     enabled: true
     daemon_reload: true
+
+- name: Warten, bis wetty auf der Docker-Bridge antwortet
+  ansible.builtin.uri:
+    url: "http://{{ webtty_bind_ip }}:3000/"
+    status_code: 200
+  register: webtty_up
+  retries: 12
+  delay: 5
+  until: webtty_up.status == 200

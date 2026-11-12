@@ -43,7 +43,7 @@ webtty_proxy_location: |
   {% if webtty_allowed_networks | length > 0 %}
     deny all;
   {% endif %}
-    proxy_pass http://{{ docker_bridge.network.IPAM.Config[0].Gateway }}:3000/;
+    proxy_pass http://{{ webtty_bind_ip }}:3000/;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";

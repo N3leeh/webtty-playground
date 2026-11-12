@@ -1,22 +1,25 @@
 [Unit]
 Description=WebTTY Service
-After=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
 Requires=docker.service
 
 [Service]
 TimeoutStartSec=0
 Restart=always
-ExecStartPre=-/usr/bin/docker stop %n
-ExecStartPre=-/usr/bin/docker rm %n
-ExecStartPre=/usr/bin/docker pull {{ webtty_image }}
+RestartSec=5
+# Reste eines alten Containers entfernen ("-": Fehler, wenn es keinen gibt, ist egal)
+ExecStartPre=-/usr/bin/docker rm -f %n
+# Kein "docker pull" beim Start: das Image zieht Ansible beim Ausrollen.
+# So hängt ein (Neu-)Start nicht an Docker Hub (Pull-Limits bei Hetzner & Co.).
 ExecStart=/usr/bin/docker run --rm --name %n \
--p {{ docker_bridge.network.IPAM.Config[0].Gateway }}:3000:3000 \
-{{ webtty_image }} \
-wetty \
---base=/ \
---ssh-host={{ docker_bridge.network.IPAM.Config[0].Gateway }}
-
+  -p {{ webtty_bind_ip }}:3000:3000 \
+  {{ webtty_image }} \
+  --host=0.0.0.0 \
+  --port=3000 \
+  --base=/ \
+  --ssh-host={{ webtty_bind_ip }}
 ExecStop=/usr/bin/docker stop %n
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
