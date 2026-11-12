@@ -3,15 +3,36 @@
 ssh_jailed_users: []
 
 # --- Passwörter -------------------------------------------------------------
-# Für jeden User wird ein zufälliges Passwort erzeugt und auf dem
-# Ansible-Controller unter "{{ jail_credentials_dir }}/<user>" abgelegt
-# (Verzeichnis ist per .gitignore ausgeschlossen). Die erste Spalte der Datei
-# ist das Klartext-Passwort, das an die Teilnehmenden ausgegeben wird.
+# Das Klartext-Passwort jedes Users liegt nach dem Lauf auf dem
+# Ansible-Controller unter "{{ jail_credentials_dir }}/<user>" (erste Spalte),
+# das Verzeichnis ist per .gitignore ausgeschlossen.
 jail_credentials_dir: "{{ playbook_dir }}/credentials"
+
+# "random":  Zufallspasswort (jail_password_length Zeichen)
+# "pattern": aus Bausteinen zusammengesetzt (jail_password_pattern)
+jail_password_mode: "random"
 jail_password_length: 12
 
-# Veraltet: Wenn gesetzt, wird wie früher "<user><suffix>" als Passwort
-# verwendet statt eines Zufallspassworts. Nicht empfohlen - siehe readme.md.
+# Bausteine in dieser Reihenfolge. Bekannte Namen:
+#   user     -> Login-Name (z.B. max)
+#   User     -> Login-Name mit großem Anfangsbuchstaben (z.B. Max)
+#   suffix   -> jail_password_suffix
+#   number   -> jail_password_number (oder zufällig, s.u.)
+#   special  -> jail_password_special (oder zufällig, s.u.)
+# Alles andere wird wörtlich übernommen, z.B. ["User", "-", "number"].
+jail_password_pattern: ["user", "suffix", "number", "special"]
+jail_password_suffix: "Start"
+# Feste Zahl, z.B. "2026". Leer = pro User zufällig mit
+# jail_password_number_digits Stellen (bleibt bei weiteren Läufen gleich).
+jail_password_number: ""
+jail_password_number_digits: 3
+# Festes Sonderzeichen, z.B. "!". Leer = pro User zufällig aus
+# jail_password_special_chars (bleibt bei weiteren Läufen gleich).
+jail_password_special: ""
+jail_password_special_chars: "!?#+-.@"
+
+# Veraltet: gesetzt = Schema "<user><suffix>" (entspricht mode "pattern"
+# mit pattern ["user", "suffix"]).
 initial_password_suffix: ""
 
 # Wie lange die Accounts gültig sind (Stunden ab dem Playbook-Lauf).

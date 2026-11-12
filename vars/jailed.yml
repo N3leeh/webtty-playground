@@ -1,10 +1,16 @@
 ---
 # Add users here
 ssh_jailed_users: ["max", "mellanie"]
-# Passwörter werden zufällig erzeugt und liegen danach in ./credentials/<user>
-# (siehe readme.md). Das alte Schema "<user>Start123" ist bewusst entfernt,
-# weil es in diesem öffentlichen Repo für jeden lesbar war.
-# initial_password_suffix: ""
+# Passwörter: zusammengesetzt aus Bausteinen, z.B. "maxStart482#".
+# Zahl und Sonderzeichen sind hier pro Person zufällig (sonst wäre das Schema
+# aus diesem öffentlichen Repo erratbar). Feste Werte: jail_password_number: "2026",
+# jail_password_special: "!". Zufallspasswort statt Schema: jail_password_mode: "random".
+# Alle Optionen: roles/docker-jail/defaults/main.yml. Klartext danach in ./credentials/<user>.
+jail_password_mode: "pattern"
+jail_password_pattern: ["user", "suffix", "number", "special"]
+jail_password_suffix: "Start"
+jail_password_number: ""
+jail_password_special: ""
 
 # Zusätzliche (schreibgeschützte) Mounts für die Schnitzeljagd aus dem
 # Repo workshop_exercise. Fehlende Quellen werden beim Login übersprungen.

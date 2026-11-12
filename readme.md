@@ -6,7 +6,7 @@ Quick ansible playbook to install locally these requirements:
 - Creates group `jailed` and users from `ssh_jailed_users` variable
     - users expire after `jail_account_lifetime_hours` (default 48h)
     - users with group `jailed` will connect to an unprivileged, resource-limited docker container
-    - every user gets a random initial password (see [Passwörter](#passwörter))
+    - passwords random or composed from parts like user+suffix+number+special (see [Passwörter](#passwörter))
 
 ## Usage
 Entrypoint is the `./bootstrap.sh` file to install dependencies (i.e. ansible, galaxy roles and collections) and start the playbook.
@@ -34,7 +34,7 @@ Tipp für ein Zertifikat ohne Warnung: Über [sslip.io](https://sslip.io) hat je
 | Risiko | Schutz |
 |---|---|
 | Passwort-Raten über SSH aus dem Internet | Teilnehmende können sich über Port 22 von außen **gar nicht** anmelden (kein Passwort, keine Keys). Admins nur per Key. |
-| Passwort-Raten über die Web-Seite | zufällige 12-stellige Passwörter, `MaxAuthTries 6`; optional `webtty_basic_auth: true` (gemeinsames Workshop-Passwort vor der Login-Seite) oder `webtty_allowed_networks` (z.B. nur Uni-Netz) |
+| Passwort-Raten über die Web-Seite | pro Person unterschiedliche Passwörter (zufällige Zahl/Sonderzeichen oder komplett zufällig), `MaxAuthTries 6`; optional `webtty_basic_auth: true` (gemeinsames Workshop-Passwort vor der Login-Seite) oder `webtty_allowed_networks` (z.B. nur Uni-Netz) |
 | Teilnehmende untereinander | eigener Container pro Sitzung, nur das eigene Home eingehängt, keine Verbindung zwischen Containern, kein Internet, Limits für CPU/RAM/Prozesse, max. 3 Sitzungen pro Person (`jail_max_sessions_per_user`) |
 | Zugriff auf den Server selbst | kein Shell-Zugang auf dem Host (`ForceCommand`), keine Passwort-Hashes im Container, keine SSH-Weiterleitungen |
 | Nicht abgedeckt | Plattenplatz: wer sein Home vollschreibt, füllt die Platte für alle. Für eine Wegwerf-VM akzeptiert. |
@@ -42,16 +42,27 @@ Tipp für ein Zertifikat ohne Warnung: Über [sslip.io](https://sslip.io) hat je
 **Achtung fail2ban/ufw:** Alle Logins über wetty kommen von derselben Docker-IP. fail2ban auf sshd würde nach ein paar falschen Passwörtern **alle** aussperren (falls doch genutzt: `ignoreip = 172.16.0.0/12`). Eine Host-Firewall (ufw/nftables) muss Port 22 von der Docker-Bridge erlauben.
 
 ## Passwörter
-Für jeden User in `ssh_jailed_users` wird beim ersten Lauf ein zufälliges Passwort erzeugt und auf dem Ansible-Controller unter `credentials/<user>` gespeichert (per `.gitignore` ausgeschlossen). Die erste Spalte ist das Klartext-Passwort:
+Zwei Modi, einzustellen in `vars/jailed.yml`:
+
+- **`jail_password_mode: "pattern"`** (so voreingestellt): Das Passwort wird aus Bausteinen zusammengesetzt, z.B. `maxStart482#`.
+  ```yaml
+  jail_password_pattern: ["user", "suffix", "number", "special"]   # Reihenfolge frei wählbar
+  jail_password_suffix: "Start"
+  jail_password_number: ""    # "" = pro Person zufällig (3 Stellen), oder fest z.B. "2026"
+  jail_password_special: ""   # "" = pro Person zufällig aus !?#+-.@, oder fest z.B. "!"
+  ```
+  Bausteine: `user` (max), `User` (Max), `suffix`, `number`, `special`; alles andere wird wörtlich übernommen (z.B. `["User", "-", "number"]`).
+  **Hinweis:** Sind Zahl und Sonderzeichen fest, steht das komplette Schema in diesem öffentlichen Repo und ist für jeden erratbar. Dann besser `webtty_basic_auth` oder `webtty_allowed_networks` aktivieren.
+- **`jail_password_mode: "random"`**: zufälliges 12-stelliges Passwort pro Person.
+
+In beiden Fällen liegt das Klartext-Passwort danach auf dem Ansible-Controller unter `credentials/<user>` (per `.gitignore` ausgeschlossen, erste Spalte):
 
 ```sh
 for f in credentials/*; do echo "$(basename "$f"): $(cut -d' ' -f1 "$f")"; done
 ```
 
-Weitere Läufe verwenden dieselben Passwörter. Für ein neues Passwort die Datei `credentials/<user>` löschen und das Playbook erneut ausführen.
+Weitere Läufe verwenden dieselben Passwörter. Für ein neues Passwort (oder nach einem Wechsel des Modus) die Dateien `credentials/<user>` bzw. `credentials/.<user>.*` löschen und das Playbook erneut ausführen.
 Soll beim ersten Login ein Passwortwechsel erzwungen werden: `chage -d 0 <user>` (vorher testen, ob der Wechsel-Dialog über wetty funktioniert).
-
-Das frühere Schema `<user>Start123` lässt sich über `initial_password_suffix` wieder aktivieren. Davon wird abgeraten: Benutzernamen und Suffix stehen in diesem öffentlichen Repo.
 
 ## Konfiguration
 Die wichtigsten Variablen (Defaults in `roles/docker-jail/defaults/main.yml`, Workshop-Werte in `vars/jailed.yml`):
@@ -60,7 +71,8 @@ Die wichtigsten Variablen (Defaults in `roles/docker-jail/defaults/main.yml`, Wo
 |---|---|---|
 | `ssh_jailed_users` | `[]` | Login-Namen der Teilnehmenden |
 | `jail_account_lifetime_hours` | `48` | Gültigkeit der Accounts (tagesgenau) |
-| `jail_credentials_dir` | `credentials/` | Ablage der generierten Passwörter |
+| `jail_credentials_dir` | `credentials/` | Ablage der Passwörter (Klartext) |
+| `jail_password_mode` | `random` (Workshop: `pattern`) | Zufallspasswort oder aus Bausteinen zusammengesetzt |
 | `jail_network` | `workshop-jail` | eigenes Docker-Netz, `""` = Standard-Bridge |
 | `jail_network_internal` | `true` | kein Internet aus dem Container (kein `apt install`) |
 | `jail_pids_limit` | `256` | max. Prozesse pro Sitzung |

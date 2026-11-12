@@ -6,6 +6,49 @@
     name: jailed
     state: present
 
+- name: Ordner für die Zugangsdaten auf dem Controller
+  ansible.builtin.file:
+    path: "{{ jail_credentials_dir }}"
+    state: directory
+    mode: '0700'
+  delegate_to: localhost
+  become: false
+
+- name: Passwort-Schema bestimmen
+  ansible.builtin.set_fact:
+    _pw_mode: "{{ 'pattern' if initial_password_suffix | length > 0 else jail_password_mode }}"
+    _pw_pattern: >-
+      {{ ['user', 'suffix'] if initial_password_suffix | length > 0 else jail_password_pattern }}
+    _pw_suffix: >-
+      {{ initial_password_suffix if initial_password_suffix | length > 0 else jail_password_suffix }}
+
+- name: Passwörter zusammensetzen (Modus "pattern")
+  vars:
+    # Zufällige Teile werden je User gespeichert und bei weiteren Läufen wiederverwendet
+    _number: >-
+      {{ jail_password_number if jail_password_number | string | length > 0 else
+         lookup('ansible.builtin.password', jail_credentials_dir ~ '/.' ~ item ~ '.zahl',
+                length=jail_password_number_digits | int, chars=['digits']) }}
+    _special: >-
+      {{ jail_password_special if jail_password_special | length > 0 else
+         lookup('ansible.builtin.password', jail_credentials_dir ~ '/.' ~ item ~ '.sonderzeichen',
+                length=1, chars=[jail_password_special_chars]) }}
+    _parts:
+      user: "{{ item }}"
+      User: "{{ item | capitalize }}"
+      suffix: "{{ _pw_suffix }}"
+      number: "{{ _number | string | trim }}"
+      special: "{{ _special | trim }}"
+  ansible.builtin.copy:
+    dest: "{{ jail_credentials_dir }}/{{ item }}"
+    content: "{% for p in _pw_pattern %}{{ _parts[p] if p in _parts else p }}{% endfor %}\n"
+    mode: '0600'
+  delegate_to: localhost
+  become: false
+  loop: "{{ ssh_jailed_users }}"
+  when: _pw_mode == 'pattern'
+  no_log: true
+
 - name: Ensure jailed users exists
   ansible.builtin.user:
     name: "{{ item }}"
@@ -14,14 +57,15 @@
     shell: "/bin/bash"
     # Ablauf nach jail_account_lifetime_hours (Default 48h), tagesgenau
     expires: "{{ (ansible_date_time.epoch | int) + (jail_account_lifetime_hours | int * 3600) }}"
-    # Standard: Zufallspasswort pro User, Klartext liegt auf dem Controller in
-    # jail_credentials_dir/<user> (erste Spalte). Der Salt wird dort ebenfalls
-    # gespeichert, dadurch bleibt der Hash bei jedem Lauf gleich (idempotent).
-    # Legacy: initial_password_suffix gesetzt -> "<user><suffix>".
+    # "random": Zufallspasswort, Klartext + Salt in jail_credentials_dir/<user>
+    #           (Hash bleibt bei jedem Lauf gleich).
+    # "pattern": Klartext aus der Datei oben, Salt aus dem Usernamen abgeleitet
+    #           (ebenfalls idempotent).
     password: >-
       {{
-        (item + initial_password_suffix) | password_hash('sha512', (item | hash('sha256'))[:16])
-        if (initial_password_suffix | length > 0) else
+        (lookup('ansible.builtin.file', jail_credentials_dir ~ '/' ~ item) | trim)
+          | password_hash('sha512', (item | hash('sha256'))[:16])
+        if _pw_mode == 'pattern' else
         lookup('ansible.builtin.password', jail_credentials_dir ~ '/' ~ item,
                length=jail_password_length, chars=['ascii_letters', 'digits'],
                encrypt='sha512_crypt')
