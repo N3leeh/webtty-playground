@@ -35,6 +35,11 @@ RUN echo 'Set disable_coredump false' >> /etc/sudo.conf
 
 ENV LANG=de_DE.UTF-8
 
+# fortune und cowsay (Sidequest der Schnitzeljagd) liegen unter /usr/games.
+# Der Container startet eine Nicht-Login-Shell, /etc/profile (das /usr/games
+# sonst ergänzt) wird nicht gelesen - daher hier direkt im PATH.
+ENV PATH="${PATH}:/usr/games"
+
 # Make it a bit fancy
 RUN echo 'export PS1="🐳 \u:\W# "' >> /etc/profile
 RUN echo 'export LS_OPTIONS="--color=auto"' >> /etc/profile
