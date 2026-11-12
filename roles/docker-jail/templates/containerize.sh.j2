@@ -104,7 +104,9 @@ if tty -s; then
     # /etc/workshop-motd = Begrüßung (webtty-playground), weitere Teile legen
     # andere Playbooks in /etc/workshop-motd.d/*.motd ab (z.B. Schnitzeljagd)
     for motd in /etc/workshop-motd /etc/workshop-motd.d/*.motd; do
-        [ -r "$motd" ] && sed "s/@USER@/$(id -un "$SUDO_UID")/g" "$motd"
+        if [ -r "$motd" ]; then
+            sed "s/@USER@/$(id -un "$SUDO_UID")/g" "$motd"
+        fi
     done
     containerize -it
 else
