@@ -9,4 +9,7 @@
     name: debian-jail
     tag: latest
     source: build
+    # Bei jedem Lauf neu bauen, damit Änderungen am Dockerfile ankommen.
+    # Dank Build-Cache schnell; unverändertes Image -> kein "changed".
+    force_source: true
     force_tag: true
