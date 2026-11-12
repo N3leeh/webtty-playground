@@ -20,6 +20,14 @@
     mode: '0644'
   when: jail_motd_template | length > 0
 
+- name: Ordner für weitere Teile der Login-Nachricht (z.B. Schnitzeljagd aus workshop_exercise)
+  ansible.builtin.file:
+    path: /etc/workshop-motd.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
 - name: Keine Login-Nachricht, wenn jail_motd_template leer ist
   ansible.builtin.file:
     path: /etc/workshop-motd

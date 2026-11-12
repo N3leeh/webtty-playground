@@ -61,6 +61,11 @@
         tag: latest
         state: absent
 
+    - name: Remove additional login message parts (e.g. Schnitzeljagd)
+      ansible.builtin.file:
+        path: /etc/workshop-motd.d
+        state: absent
+
     - name: Remove generated credentials
       ansible.builtin.file:
         path: "{{ jail_credentials_dir }}"

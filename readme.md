@@ -121,7 +121,7 @@ ansible-playbook -i localhost, -c local tests/jail-test.yml
 Nicht automatisch getestet: nginx, wetty und die sshd-Konfiguration (brauchen einen vollständigen Server).
 
 ## Login-Nachricht
-Bei jedem interaktiven Login zeigt `containerize.sh` die Nachricht aus `/etc/workshop-motd` an (Template `roles/docker-jail/templates/workshop-motd.j2`, `@USER@` wird durch den Login-Namen ersetzt). Abschalten mit `jail_motd_template: ""`.
+Bei jedem interaktiven Login zeigt `containerize.sh` die Begrüßung aus `/etc/workshop-motd` an (Template `roles/docker-jail/templates/workshop-motd.j2`, `@USER@` wird durch den Login-Namen ersetzt). Sie enthält bewusst **keinen** Hinweis auf die Schnitzeljagd. Weitere Teile hängen andere Playbooks als `/etc/workshop-motd.d/*.motd` an (alphabetisch sortiert): Das Playbook `setup-exercises.yaml` aus `workshop_exercise` legt dort den Teil mit dem Verweis auf die Aufgaben ab, sobald die Aufgaben übertragen werden. Abschalten der Begrüßung mit `jail_motd_template: ""`.
 
 ## Docker
 After the login of your students, you can execute `ansible-playbook docker-ping.yml` in order verifiy the running docker container.
