@@ -40,6 +40,11 @@ ENV LANG=de_DE.UTF-8
 # sonst ergänzt) wird nicht gelesen - daher hier direkt im PATH.
 ENV PATH="${PATH}:/usr/games"
 
+# Roter Prompt für root ("sudo -i" liest /root/.profile -> /root/.bashrc).
+# Dieselbe Datei kommt per Ansible in die .bashrc der Teilnehmenden (grün).
+COPY bash-prompt /etc/bash-prompt
+RUN printf '\n. /etc/bash-prompt\n' >> /root/.bashrc
+
 # Make it a bit fancy
 RUN echo 'export PS1="🐳 \u:\W# "' >> /etc/profile
 RUN echo 'export LS_OPTIONS="--color=auto"' >> /etc/profile

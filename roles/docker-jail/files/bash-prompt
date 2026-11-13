@@ -1,0 +1,8 @@
+# Prompt: user@system in Grün, als root (z.B. nach "sudo -i") in Rot.
+if [ "$(id -u)" -eq 0 ]; then
+    _farbe='1;31'
+else
+    _farbe='1;32'
+fi
+PS1='\[\e['"$_farbe"'m\]\u@\h\[\e[0m\]:\w\$ '
+unset _farbe

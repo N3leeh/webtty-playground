@@ -90,3 +90,18 @@
   ansible.builtin.include_tasks: remove-groups.yml
   with_items: "{{ ssh_jailed_users }}"
   when: (ssh_jailed_users|length>0)
+
+# Prompt user@system in Grün (als root rot, siehe files/bash-prompt).
+# blockinfile statt copy: Die Schnitzeljagd (workshop_exercise) ergänzt die
+# .bashrc um einen Alias, der dadurch erhalten bleibt.
+- name: Grüner Prompt in der .bashrc der Teilnehmenden
+  ansible.builtin.blockinfile:
+    path: "/home/{{ item }}/.bashrc"
+    create: true
+    owner: "{{ item }}"
+    group: jailed
+    mode: '0644'
+    marker: "# {mark} Prompt (webtty-playground)"
+    block: "{{ lookup('ansible.builtin.file', role_path ~ '/files/bash-prompt') }}"
+  with_items: "{{ ssh_jailed_users }}"
+  when: (ssh_jailed_users|length>0)
